@@ -5,9 +5,11 @@
 
 <div align="center">
 
-![Latest Release](https'img.shields.io/github/v/release/kBeQ/SMX-Mod-Manager?style=for-the-badge')
+
+**[Latest Release](/releases) • [Downloads](/releases) • [License](/LICENSE)**
+<!-- ![Latest Release](https'img.shields.io/github/v/release/kBeQ/SMX-Mod-Manager?style=for-the-badge')
 ![Downloads](https'img.shields.io/github/downloads/kBeQ/SMX-Mod-Manager/total?style=for-the-badge')
-![License](https'img.shields.io/github/license/kBeQ/SMX-Mod-Manager?style=for-the-badge')
+![License](https'img.shields.io/github/license/kBeQ/SMX-Mod-Manager?style=for-the-badge') -->
 
 </div>
 
