@@ -59,6 +59,8 @@ For the manager to find your mods, you need a simple folder structure. Inside th
 *   Place each individual mod in its own folder.
 
 ![SMX Mod Manager Libraries](/docs/SMXMM-Libraries.png)
+![SMX Mod Manager Libraries Categories](/docs/SMXMM-Libraries-Cat.png)
+
 
 **Example Structure:**
 ```
