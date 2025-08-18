@@ -13,3 +13,16 @@ __pycache__/
 # Virtual Environment
 venv/
 .venv/
+
+
+# =================================================================
+# Design & Project Files
+# =================================================================
+*.afphoto
+*.afpub
+*.afdesign
+*.psd
+*.psb
+*.blend
+*.blend1
+*.gimp

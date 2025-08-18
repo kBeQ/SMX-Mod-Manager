@@ -1,13 +1,13 @@
 # SMX Mod Manager
 
 <!-- IMPORTANT: UPLOAD THE "SMX Mod Manager.png" BANNER TO YOUR REPO AND UPDATE THIS LINK -->
-![SMX Mod Manager Banner](https://raw.githubusercontent.com/kBeQ/SMX Mod Manager/main/SMX%20Mod%20Manager.png)
+![SMX Mod Manager Banner](https'raw.githubusercontent.com/kBeQ/SMX-Mod-Manager/main/SMX%20Mod%20Manager.png')
 
 <div align="center">
 
-![Latest Release](https://img.shields.io/github/v/release/kBeQ/SMX Mod Manager?style=for-the-badge)
-![Downloads](https://img.shields.io/github/downloads/kBeQ/SMX Mod Manager/total?style=for-the-badge)
-![License](https://img.shields.io/github/license/kBeQ/SMX Mod Manager?style=for-the-badge)
+![Latest Release](https'img.shields.io/github/v/release/kBeQ/SMX-Mod-Manager?style=for-the-badge')
+![Downloads](https'img.shields.io/github/downloads/kBeQ/SMX-Mod-Manager/total?style=for-the-badge')
+![License](https'img.shields.io/github/license/kBeQ/SMX-Mod-Manager?style=for-the-badge')
 
 </div>
 
@@ -22,7 +22,7 @@ A powerful, user-friendly desktop application for organizing, installing, and ma
     ==  important part of making your project look good!                              ==
     ====================================================================================
 -->
-![App Screenshot](https://raw.githubusercontent.com/kBeQ/SMX Mod Manager/SMX Mod Manager.png)
+![App Screenshot](https'raw.githubusercontent.com/kBeQ/SMX-Mod-Manager/main/SMX%20Mod%20Manager.png')
 
 ## ✨ Key Features
 
