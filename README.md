@@ -58,31 +58,10 @@ For the manager to find your mods, you need a simple folder structure. Inside th
 *   To create categories within a type, make a folder with a `c_` prefix (e.g., `c_Supermoto`).
 *   Place each individual mod in its own folder.
 
+![SMX Mod Manager Libraries](/docs/SMXMM-Libraries.png)
+
 **Example Structure:**
 ```
-My SMX Mods/
-└── Tracks/
-    ├── c_Supermoto/
-    │   └── My Awesome Track/
-    │       ├── Track1.smxlevel
-    │       └── preview.jpg
-    │
-    └── Uncategorized Track/
-        ├── Track2.smxlevel
-        └── preview.jpg
-    Suits/
-    ├── c_Mx/
-    │   └── My First Suit/
-    │       ├── gear_suit.png
-    │       ├── gear_suit_normal.png
-    │       ├── preview.jpg
-    │       └── icon.jpg
-    │
-    └── Uncategorized Suit/
-        ├── gear_suit.png
-        ├── gear_suit_normal.png
-        ├── preview.jpg
-        └── icon.jpg
     Sounds/
     ├── c_4-Stroke/
     │   └── My First Sound Mod/
@@ -100,14 +79,45 @@ My SMX Mods/
         ├── low.wav
         ├── preview.jpg
         └── icon.jpg
+
+
+    Suits/
+    ├── c_Mx/
+    │   └── My First Suit/
+    │       ├── gear_suit.png
+    │       ├── gear_suit_normal.png
+    │       ├── preview.jpg
+    │       └── icon.jpg
+    │
+    └── Uncategorized Suit/
+        ├── gear_suit.png
+        ├── gear_suit_normal.png
+        ├── preview.jpg
+        └── icon.jpg
+
+
+    Tracks/
+    ├── c_Supermoto/
+    │   └── My Awesome Track/
+    │       ├── Track1.smxlevel
+    │       └── preview.jpg
+    │
+    └── Uncategorized Track/
+        ├── Track2.smxlevel
+        └── preview.jpg
 ```
 
 ### 3. Installing Mods
-1.  Launch the Google Play Games Developer Emulator and start SMX.
-2.  In the **Mod Manager** tab, wait for the status indicator to turn green and say "Connected".
-3.  Select the mod(s) you want to install. You can **Ctrl+Click** to select multiple.
-4.  Click the **"Install/Update Selected"** button on the left.
-5.  The log output at the bottom will show the progress!
+1. Launch SMX Mod Manager.
+1.a  Launch the Google Play Games Developer Emulator and wait for the status indicator to turn yellow and say "Emulator running. Please start the game."
+2. Launch SMX. ** You can do so from the tool itself! Saving you the game's loading time to begin managing your mods!
+3. Wait for the status indicator to turn green and say "Connected".
+4. Select the mod(s) you want to install. You can **Ctrl+Click** to select multiple.
+5. Click the **"Install/Update Selected"** button.
+6. The log output at the bottom will show the progress!
+
+The "Mod Helper" tab should have everything you need to know.
+
 
 ## 🛠️ Building from Source
 
