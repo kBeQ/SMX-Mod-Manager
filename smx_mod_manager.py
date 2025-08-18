@@ -16,12 +16,12 @@ import ctypes
 from PIL import Image, ImageTk
 
 # Import other modules...
-from mod_manager_ui import ModManagerFrame
-from on_device_ui import OnDeviceFrame
-from mod_helper_ui import ModHelperFrame
-from settings_ui import SettingsFrame
-from adb_handler import AdbHandler
-from data_manager import DataManager
+from src.mod_manager_ui import ModManagerFrame
+from src.on_device_ui import OnDeviceFrame
+from src.mod_helper_ui import ModHelperFrame
+from src.settings_ui import SettingsFrame
+from src.adb_handler import AdbHandler
+from src.data_manager import DataManager
 
 # --- Global Constants ---
 CONFIG_FILE = "config.json"
@@ -42,7 +42,7 @@ def get_resource_path(filename):
         base_dir = sys._MEIPASS
     else:
         base_dir = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(base_dir, filename)
+    return os.path.join(base_dir, 'assets', filename)
 
 # --- Splash Screen Class ---
 class SplashScreen:
