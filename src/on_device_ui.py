@@ -3,7 +3,7 @@ import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import messagebox, font
-from shared_ui_components import ModListView
+from src.shared_ui_components import ModListView
 
 class OnDeviceFrame(ttk.Frame):
     name = "On Device"

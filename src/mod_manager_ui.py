@@ -6,7 +6,7 @@ from ttkbootstrap.scrolled import ScrolledText
 from tkinter import filedialog, font, messagebox
 import os
 import json
-from shared_ui_components import ModListView, ModDisplayItem
+from src.shared_ui_components import ModListView, ModDisplayItem
 
 class ModManagerFrame(ttk.Frame):
     name = "Mod Manager"
