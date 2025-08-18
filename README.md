@@ -6,10 +6,7 @@
 <div align="center">
 
 
-**[Latest Release](/releases) • [Downloads](/releases) • [License](/LICENSE)**
-<!-- ![Latest Release](https'img.shields.io/github/v/release/kBeQ/SMX-Mod-Manager?style=for-the-badge')
-![Downloads](https'img.shields.io/github/downloads/kBeQ/SMX-Mod-Manager/total?style=for-the-badge')
-![License](https'img.shields.io/github/license/kBeQ/SMX-Mod-Manager?style=for-the-badge') -->
+**[Latest Release](/releases) • [License](/LICENSE)**
 
 </div>
 
@@ -41,7 +38,7 @@ To use this tool, you **MUST** have the **Developer Emulator** version of Google
 
 ## 🚀 Installation
 
-1.  Go to the [**Releases Page**](https://github.com/kBeQ/SMX Mod Manager/releases) of this repository.
+1.  Go to the [**Releases Page**](https://github.com/kBeQ/SMX%20Mod%20Manager/releases) of this repository.
 2.  Download the latest `SMX_Mod_Manager_Build.zip` file.
 3.  Unzip the folder to a permanent location on your computer (e.g., your Desktop or `C:\Program Files`).
 4.  Run `smx_mod_manager.exe` from inside the unzipped folder.
@@ -67,11 +64,41 @@ My SMX Mods/
 └── Tracks/
     ├── c_Supermoto/
     │   └── My Awesome Track/
-    │       ├── Track.smxlevel
-    │       └── icon.jpg
+    │       ├── Track1.smxlevel
+    │       └── preview.jpg
     │
     └── Uncategorized Track/
-        ├── Track.smxlevel
+        ├── Track2.smxlevel
+        └── preview.jpg
+    Suits/
+    ├── c_Mx/
+    │   └── My First Suit/
+    │       ├── gear_suit.png
+    │       ├── gear_suit_normal.png
+    │       ├── preview.jpg
+    │       └── icon.jpg
+    │
+    └── Uncategorized Suit/
+        ├── gear_suit.png
+        ├── gear_suit_normal.png
+        ├── preview.jpg
+        └── icon.jpg
+    Sounds/
+    ├── c_4-Stroke/
+    │   └── My First Sound Mod/
+    │       ├── engine.wav
+    │       ├── high.wav
+    │       ├── idle.wav
+    │       ├── low.wav
+    │       ├── preview.jpg
+    │       └── icon.jpg
+    │
+    └── Uncategorized Sound/
+        ├── engine.wav
+        ├── high.wav
+        ├── idle.wav
+        ├── low.wav
+        ├── preview.jpg
         └── icon.jpg
 ```
 
