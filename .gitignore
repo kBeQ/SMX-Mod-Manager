@@ -31,3 +31,5 @@ venv/
 # Build & Utility Scripts
 # =================================================================
 *.bat
+# But DO track this specific script
+!"build & run.bat"

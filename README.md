@@ -50,6 +50,7 @@ To use this tool, you **MUST** have the **Developer Emulator** version of Google
 *   Under "Local Mod Library," click **"Add Folder..."**.
 *   Select the main folder on your PC where you store all your mods (e.g., a folder called "My SMX Mods").
 *   You will be prompted to select the **type** of mods this library contains (Tracks, Sounds, or Suits).
+![SMX Mod Manager Libraries](/docs/SMXMM-Libraries.png)
 
 ### 2. Organizing Your Local Mods
 For the manager to find your mods, you need a simple folder structure. Inside the main Library folder you just added:
@@ -58,7 +59,6 @@ For the manager to find your mods, you need a simple folder structure. Inside th
 *   To create categories within a type, make a folder with a `c_` prefix (e.g., `c_Supermoto`).
 *   Place each individual mod in its own folder.
 
-![SMX Mod Manager Libraries](/docs/SMXMM-Libraries.png)
 ![SMX Mod Manager Libraries Categories](/docs/SMXMM-Libraries-Cat.png)
 
 
@@ -71,16 +71,14 @@ For the manager to find your mods, you need a simple folder structure. Inside th
     │       ├── high.wav
     │       ├── idle.wav
     │       ├── low.wav
-    │       ├── preview.jpg
-    │       └── icon.jpg
+    │       └── preview.jpg
     │
     └── Uncategorized Sound/
         ├── engine.wav
         ├── high.wav
         ├── idle.wav
         ├── low.wav
-        ├── preview.jpg
-        └── icon.jpg
+        └── preview.jpg
 
 
     Suits/
