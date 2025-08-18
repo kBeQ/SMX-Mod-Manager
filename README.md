@@ -1,7 +1,7 @@
 # SMX Mod Manager
 
-<!-- IMPORTANT: UPLOAD THE "SMX Mod Manager.png" BANNER TO YOUR REPO AND UPDATE THIS LINK -->
-![SMX Mod Manager Banner](https'raw.githubusercontent.com/kBeQ/SMX-Mod-Manager/main/SMX%20Mod%20Manager.png')
+<!-- The path starts from the root of your project -->
+![SMX Mod Manager Banner](/assets/SMX%20Mod%20Manager.png)
 
 <div align="center">
 
@@ -15,14 +15,8 @@ A powerful, user-friendly desktop application for organizing, installing, and ma
 
 ---
 
-<!-- 
-    ====================================================================================
-    ==  CRITICAL: TAKE A SCREENSHOT of the Mod Manager tab with some mods displayed.  ==
-    ==  Upload it to your repository and replace the link below. This is the most     ==
-    ==  important part of making your project look good!                              ==
-    ====================================================================================
--->
-![App Screenshot](https'raw.githubusercontent.com/kBeQ/SMX-Mod-Manager/main/SMX%20Mod%20Manager.png')
+<!-- This path points to the new docs folder -->
+<!-- ![App Screenshot](/docs/AppScreenshot0.png) -->
 
 ## ✨ Key Features
 
