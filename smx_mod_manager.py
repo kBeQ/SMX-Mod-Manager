@@ -223,7 +223,7 @@ class App(ttk.Window):
 
     def find_adb_path(self):
         """Finds a usable adb.exe path using a priority system."""
-        local_adb_path = os.path.join(get_script_directory(), "adb.exe")
+        local_adb_path = os.path.join(get_script_directory(), "bin", "adb.exe")
         if os.path.exists(local_adb_path):
             return local_adb_path
 
