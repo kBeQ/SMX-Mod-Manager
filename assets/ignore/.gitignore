@@ -1,0 +1,6 @@
+# Ignore all files in this directory...
+*
+
+# ...but DO NOT ignore this .gitignore file itself.
+# This ensures the 'ignore' folder gets added to the repository.
+!/.gitignore
