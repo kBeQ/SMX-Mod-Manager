@@ -116,7 +116,7 @@ The manager expects a specific structure *inside* each Library folder you've add
     │       ├── low.wav
     │       └── preview.jpg
     │
-    └── Sound 0/   <----  "Uncategorized/"
+    └── Sound 0/   <----  "Sounds/Uncategorized/"
         ├── engine.wav
         ├── high.wav
         ├── idle.wav
@@ -132,7 +132,7 @@ The manager expects a specific structure *inside* each Library folder you've add
     │       ├── preview.jpg
     │       └── icon.jpg
     │
-    └── Suit 0/   <----  "Uncategorized/"
+    └── Suit 0/   <----  "Suits/Uncategorized/"
         ├── gear_suit.png
         ├── gear_suit_normal.png
         ├── preview.jpg
@@ -145,7 +145,7 @@ The manager expects a specific structure *inside* each Library folder you've add
     │       ├── Track1.smxlevel
     │       └── preview.jpg
     │
-    └── Track 0/   <----  "Uncategorized/"
+    └── Track 0/   <----  "Tracks/SUncategorized/"
         ├── Track2.smxlevel
         └── preview.jpg
 
@@ -163,7 +163,7 @@ Let's see a "default Library" structure:
         │       ├── Mod File.extension
         │       └── preview.jpg
         │
-        └── Uncategorized Mod Folder 1/   <----  "Uncategorized/"
+        └── Uncategorized Mod Folder 1/   <----  "LibraryFolder/Uncategorized/"
             ├── Mod File.extension
             └── preview.jpg
 ```
