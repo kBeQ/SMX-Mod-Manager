@@ -60,7 +60,7 @@ To use this tool, you **MUST** have the **Developer Emulator** version of Google
 
 ## 🚀 Installation
 
-1.  Download the latest `SMX_Mod_Manager.zip` file.
+1.  Download the latest `SMX_Mod_Manager_Build.zip` file.
 2.  Unzip the folder to a permanent location on your computer (e.g., `C:\Program Files`).
 3.  Run `smx_mod_manager.exe` from inside the unzipped folder. (Create a shortcut if you want)
 
@@ -145,7 +145,7 @@ The manager expects a specific structure *inside* each Library folder you've add
     │       ├── Track1.smxlevel
     │       └── preview.jpg
     │
-    └── Track 0/   <----  "Tracks/SUncategorized/"
+    └── Track 0/   <----  "Tracks/Uncategorized/"
         ├── Track2.smxlevel
         └── preview.jpg
 
