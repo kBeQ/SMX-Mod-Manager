@@ -73,7 +73,8 @@ The Mod Manager works by linking to the folders on your PC where you store your 
 ![SMX Mod Manager Libraries](/docs/SMXMM-Libraries.png)
 *   Select the folder that contains your **Tracks** (e.g., a folder on your PC named `My Tracks`).
 *   When prompted, set the library type to **'Tracks'**.
-![SMX Mod Manager Libraries](/docs/SMXMM-LibraryType.png)
+
+    ![SMX Mod Manager Libraries](/docs/SMXMM-LibraryType.png)
 
 *   **Repeat this process for your `Suits` and `Sounds` folders.**
 *   **Flexibility:** You can add multiple libraries of the same type. For example, if you have tracks in `C:\Downloads\Tracks` and `D:\MyMods\SupermotoTracks`, you can add both as separate 'Tracks' libraries.
