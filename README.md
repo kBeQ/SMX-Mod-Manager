@@ -160,16 +160,26 @@ Let's see a "default Library" structure:
 *The "Mod Helper" tab in the application contains a detailed guide to all features.*
 
 
-
-### Publishing your Mods!!
-I made a guide on the recommended way to package the final Zip files for distribution is available on mod.io:
+## 🚀 Publishing your Mods
+For a guide on the recommended way to package your final mod files for distribution, see the guide on mod.io:
 *   **[Guide: Zipping the Files for Release](https://mod.io/g/smx/r/zipping-the-files)**
 
-> **This guide was approved and is editable by the Game's Developer!**
+> **Note:** This guide was approved and is editable by the game's developer to ensure it stays up-to-date with best practices.
+
+## 💬 Community & Support
+Join the official OE Games discord server to discuss the game, share mods, and get help from the community!
+
+**[Join the OE Games Discord Server](https://discord.gg/mJmb4HaRWN)**
+
+> ### ⚠️ **Important: Where to Ask for Help**
+> Please use the appropriate channel for support:
+> *   For questions or issues about the **game itself**, use the official Discord.
+> *   For bugs, feature requests, or problems with **this Mod Manager tool**, please **[open an issue on GitHub](/issues)**.
+>
+> This ensures that game-related questions go to the developer, and tool-related issues are tracked here. **Please do not ask for Mod Manager support in the Discord.**
 
 
 ## 🛠️ Building from Source
-
 If you want to modify the tool or build it yourself:
 
 1.  Clone this repository: `git clone https://github.com/kBeQ/SMX Mod Manager.git`
@@ -183,5 +193,4 @@ If you want to modify the tool or build it yourself:
 5.  Run the build script: `build & run.bat`
 
 ## 📄 License
-
 This project is licensed under the MIT License - see the `LICENSE` file for details.
