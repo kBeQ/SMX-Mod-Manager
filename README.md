@@ -12,6 +12,8 @@
 
 A powerful, user-friendly desktop application for organizing, installing, and managing mods for SMX on the Google Play Games on PC emulator.
 
+This tool is specifically designed for **SMX: Supermoto Vs. Motocross v7.17.13**.
+
 ---
 
 <!-- This path points to the new docs folder -->
@@ -30,7 +32,7 @@ A powerful, user-friendly desktop application for organizing, installing, and ma
 
 ## ⚠️ Prerequisites
 
-To use this tool, you **MUST** have the **Developer Emulator** version of Google Play Games on PC installed. The standard public version is locked down and will not allow the Mod Manager to access the necessary game files.
+To use this tool, you **MUST** have the **Developer Emulator** version of Google Play Games on PC installed.
 
 *   **Download Link:** [Google Play Games for PC (Developer Emulator)](https://developer.android.com/games/playgames/emulator)
 
@@ -38,42 +40,63 @@ To use this tool, you **MUST** have the **Developer Emulator** version of Google
 
 ## 🚀 Installation
 
-1.  Go to the [**Releases Page**](https://github.com/kBeQ/SMX%20Mod%20Manager/releases) of this repository.
-2.  Download the latest `SMX_Mod_Manager_Build.zip` file.
-3.  Unzip the folder to a permanent location on your computer (e.g., your Desktop or `C:\Program Files`).
-4.  Run `smx_mod_manager.exe` from inside the unzipped folder.
+1.  Download the latest `SMX_Mod_Manager_Build.zip` file.
+2.  Unzip the folder to a permanent location on your computer (e.g., your Desktop or `C:\Program Files`).
+3.  Run `smx_mod_manager.exe` from inside the unzipped folder.
 
 ## 📖 How to Use
 
 ### 1. First-Time Setup
+The Mod Manager works by linking to the folders on your PC where you store your mods. Each folder you add is called a "Library" and must contain only one type of mod.
+
 *   Open the Mod Manager and go to the **Settings** tab.
 *   Under "Local Mod Library," click **"Add Folder..."**.
-*   Select the main folder on your PC where you store all your mods (e.g., a folder called "My SMX Mods").
-*   You will be prompted to select the **type** of mods this library contains (Tracks, Sounds, or Suits).
 ![SMX Mod Manager Libraries](/docs/SMXMM-Libraries.png)
+*   Select the folder that contains your **Tracks** (e.g., a folder on your PC named `My Tracks`).
+*   When prompted, set the library type to **'Tracks'**.
+![SMX Mod Manager Libraries](/docs/SMXMM-LibraryType.png)
+
+*   **Repeat this process for your `Suits` and `Sounds` folders.**
+*   **Flexibility:** You can add multiple libraries of the same type. For example, if you have tracks in `C:\Downloads\Tracks` and `D:\MyMods\SupermotoTracks`, you can add both as separate 'Tracks' libraries.
+
+> ### The Golden Rule: Library vs. Mod Folder
+> A common mistake is selecting an individual mod's folder as a Library. You must select the parent folder that *contains* your mod folders.
+>
+> **✅ Do This:** Add the parent folder containing your mods.
+> ```
+> # Correct Library Path:
+> D:/My SMX Mods/Tracks/
+> ```
+>
+> **❌ Don't Do This:** Add the folder for a single mod.
+> ```
+> # Incorrect Library Path:
+> D:/My SMX Mods/Tracks/My Track/
+> D:/My SMX Mods/Tracks/c_My Tracks/
+> ```
 
 ### 2. Organizing Your Local Mods
-For the manager to find your mods, you need a simple folder structure. Inside the main Library folder you just added:
+The manager expects a specific structure *inside* each Library folder you've added.
 
-*   Create subfolders for each type: `Tracks`, `Sounds`, and `Suits`.
-*   To create categories within a type, make a folder with a `c_` prefix (e.g., `c_Supermoto`).
-*   Place each individual mod in its own folder.
+*   **For Categories:** Create subfolders with a `c_` prefix (e.g., `c_4-Stroke`). Place your individual mod folders inside these category folders.
+*   **For Uncategorized Mods:** Place individual mod folders directly inside the Library folder. They will appear in the "Uncategorized" category for that Library.
 
 ![SMX Mod Manager Libraries Categories](/docs/SMXMM-Libraries-Cat.png)
+
 
 
 **Example Structure:**
 ```
     Sounds/
     ├── c_4-Stroke/
-    │   └── My First Sound Mod/
+    │   └── My First Sound Mod/   <----  "Sounds/4-Stroke/"
     │       ├── engine.wav
     │       ├── high.wav
     │       ├── idle.wav
     │       ├── low.wav
     │       └── preview.jpg
     │
-    └── Uncategorized Sound/
+    └── Sound 0/   <----  "Uncategorized/"
         ├── engine.wav
         ├── high.wav
         ├── idle.wav
@@ -83,13 +106,13 @@ For the manager to find your mods, you need a simple folder structure. Inside th
 
     Suits/
     ├── c_Mx/
-    │   └── My First Suit/
+    │   └── My First Mx Suit/   <----  "Suits/Mx/"
     │       ├── gear_suit.png
     │       ├── gear_suit_normal.png
     │       ├── preview.jpg
     │       └── icon.jpg
     │
-    └── Uncategorized Suit/
+    └── Suit 0/   <----  "Uncategorized/"
         ├── gear_suit.png
         ├── gear_suit_normal.png
         ├── preview.jpg
@@ -98,25 +121,51 @@ For the manager to find your mods, you need a simple folder structure. Inside th
 
     Tracks/
     ├── c_Supermoto/
-    │   └── My Awesome Track/
+    │   └── My First Track/   <----  "Tracks/SuperMoto/"
     │       ├── Track1.smxlevel
     │       └── preview.jpg
     │
-    └── Uncategorized Track/
+    └── Track 0/   <----  "Uncategorized/"
         ├── Track2.smxlevel
         └── preview.jpg
+
+
+________________________________________________________________________________________________________
+Let's see a "default Library" structure:
+
+    LibraryFolder/
+        ├── c_Category 1/
+        │   └── Categorized Mod Folder 1/   <----  "LibraryFolder/Category 1/"
+        │       ├── Mod File.extension
+        │       └── preview.jpg
+        ├── c_Category 2/
+        │   └── Categorized Mod Folder 2/   <----  "LibraryFolder/Category 2/"
+        │       ├── Mod File.extension
+        │       └── preview.jpg
+        │
+        └── Uncategorized Mod Folder 1/   <----  "Uncategorized/"
+            ├── Mod File.extension
+            └── preview.jpg
 ```
 
-### 3. Installing Mods
-1. Launch SMX Mod Manager.
-1.a  Launch the Google Play Games Developer Emulator and wait for the status indicator to turn yellow and say "Emulator running. Please start the game."
-2. Launch SMX. ** You can do so from the tool itself! Saving you the game's loading time to begin managing your mods!
-3. Wait for the status indicator to turn green and say "Connected".
-4. Select the mod(s) you want to install. You can **Ctrl+Click** to select multiple.
-5. Click the **"Install/Update Selected"** button.
-6. The log output at the bottom will show the progress!
 
-The "Mod Helper" tab should have everything you need to know.
+### 3 . Installing Mods
+1.  Launch SMX Mod Manager.
+2.  Launch the Google Play Games Developer Emulator. The status should turn yellow.
+3.  Launch SMX. You can use the **"Launch Game"** button in the tool!
+4.  Wait for the status indicator to turn green and say "Connected".
+5.  Select the mod(s) you want to install. You can **Ctrl+Click** to select multiple.
+6.  Click the **"Install/Update Selected"** button. The log at the bottom will show the progress.
+
+*The "Mod Helper" tab in the application contains a detailed guide to all features.*
+
+
+
+### Publishing your Mods!!
+I made a guide on the recommended way to package the final Zip files for distribution is available on mod.io:
+*   **[Guide: Zipping the Files for Release](https://mod.io/g/smx/r/zipping-the-files)**
+
+> **This guide was approved and is editable by the Game's Developer!**
 
 
 ## 🛠️ Building from Source
