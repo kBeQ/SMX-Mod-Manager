@@ -180,6 +180,18 @@ Let's see a "default Library" structure:
 *The "Mod Helper" tab in the application contains a detailed guide to all features.*
 
 
+## 🤔 Frequently Asked Questions (FAQ)
+
+**Q: I've seen official guides that mention creating a `mod_0_...` folder. Do I need to do that?**
+**A:** No, you don't! The tool handles this for you automatically.
+
+The game requires mods to be in a specially named folder (like `mod_0_MyMod`). When you install a mod, the tool does two things:
+1.  It creates the correctly named `mod_i_...` folder on your device.
+2.  It saves a link in its `mod_mappings.json` file to remember which local mod corresponds to which folder on the device.
+
+This mapping file is how the tool "manages" your mods, allowing it to know their status and uninstall them correctly. You just need to focus on your source folders, and the tool handles all the complex parts!
+
+
 ## 🚀 Publishing your Mods
 For a guide on the recommended way to package your final mod files for distribution, see the guide on mod.io:
 *   **[Guide: Zipping the Files for Release](https://mod.io/g/smx/r/zipping-the-files)**
@@ -210,21 +222,7 @@ If you want to modify the tool or build it yourself:
     .\venv\Scripts\activate
     ```
 4.  Install the required packages: `pip install -r requirements.txt`
-5.  Run the build script: `build & run.bat`
+5.  Make sure your environment is valid by running: `build & run.bat`
 
 ## 📄 License
 This project is licensed under the MIT License - see the `LICENSE` file for details.
-
-
-
-
-
-
-
-
-
-
-**I hear y'a say "Where's the mod_0 folder that's in the official guide?"
-Yes!
-The game requires a "mod_i" folder to be able to read a local mod, thankfully the tool creates the folder for you!**
->SmileyFace<
