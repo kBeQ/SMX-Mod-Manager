@@ -60,9 +60,9 @@ To use this tool, you **MUST** have the **Developer Emulator** version of Google
 
 ## 🚀 Installation
 
-1.  Download the latest `SMX_Mod_Manager_Build.zip` file.
-2.  Unzip the folder to a permanent location on your computer (e.g., your Desktop or `C:\Program Files`).
-3.  Run `smx_mod_manager.exe` from inside the unzipped folder.
+1.  Download the latest `SMX_Mod_Manager.zip` file.
+2.  Unzip the folder to a permanent location on your computer (e.g., `C:\Program Files`).
+3.  Run `smx_mod_manager.exe` from inside the unzipped folder. (Create a shortcut if you want)
 
 ## 📖 How to Use
 
@@ -199,9 +199,7 @@ For a guide on the recommended way to package your final mod files for distribut
 > **Note:** This guide was approved and is editable by the game's developer to ensure it stays up-to-date with best practices.
 
 ## 💬 Community & Support
-Join the official OE Games discord server to discuss the game, share mods, and get help from the community!
-
-**[Join the OE Games Discord Server](https://discord.gg/mJmb4HaRWN)**
+**[Join the OE Games Discord Server](https://discord.gg/mJmb4HaRWN)**  to discuss the game, share mods, and get help from the community!
 
 > ### ⚠️ **Important: Where to Ask for Help**
 > Please use the appropriate channel for support:
