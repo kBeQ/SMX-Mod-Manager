@@ -33,7 +33,7 @@ This tool is specifically designed for **SMX: Supermoto Vs. Motocross v7.17.13**
 ### The Mod Manager Tab: Your Local Library
 This is your main workspace. It displays all the mods the manager has found in the Library folders you've set up on your PC.
 
-![SMX Mod Manager Main UI](/docs/SMXMM-ModManager.png)
+![SMX Mod Manager Main UI](/docs/SMXMM-On%20PC.png)
 
 *   **Library & Category Navigation:** At the top, you can switch between your main libraries (`[Tracks] Tracks`, `[Suits] Suits`, etc.) and then filter by the categories you created in your folders (`Uncategorized`, `Games`, etc.).
 *   **The Controls Panel:** The panel on the left contains your main actions: Search, Quick Select buttons, and the primary Install/Uninstall buttons.
