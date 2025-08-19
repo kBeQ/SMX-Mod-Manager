@@ -6,7 +6,7 @@
 <div align="center">
 
 
-**[Latest Release](/releases) • [License](/LICENSE)**
+**[Latest Release](https://github.com/kBeQ/SMX-Mod-Manager/releases) • [License](/LICENSE)**
 
 </div>
 
