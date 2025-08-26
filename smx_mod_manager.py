@@ -247,38 +247,48 @@ class App(ttk.Window):
     def _connection_monitoring_loop(self):
         initial_check = True
         while not self.stop_monitoring.is_set():
-            self.ADB_PATH = self.find_adb_path()
-            game_package_name = self.setting_vars["Game Configuration"]["Game Package Name"]['var'].get()
-            
-            emulator_env_running_now = self.is_emulator_environment_running()
-            adb_connected_now = self.adb.is_device_connected() if emulator_env_running_now else False
-            game_running_now = self.adb.is_game_process_running(game_package_name) if adb_connected_now else False
-
-            state_has_changed = (adb_connected_now != self.is_adb_connected) or \
-                                (emulator_env_running_now != self.is_emulator_process_running) or \
-                                (game_running_now != self.is_game_running)
-
-            if state_has_changed or initial_check:
-                self.is_emulator_process_running = emulator_env_running_now
-                self.is_adb_connected = adb_connected_now
-                self.is_game_running = game_running_now
-                self.after(0, self._update_ui_on_connection_change)
+            if self._perform_connection_check(is_initial_check=initial_check):
                 initial_check = False
-            
             time.sleep(2.5)
+
+    def _perform_connection_check(self, is_initial_check=False):
+        """Checks connection status and updates UI if state has changed."""
+        self.ADB_PATH = self.find_adb_path()
+        game_package_name = self.setting_vars["Game Configuration"]["Game Package Name"]['var'].get()
+        
+        emulator_env_running_now = self.is_emulator_environment_running()
+        adb_connected_now = self.adb.is_device_connected() if emulator_env_running_now else False
+        game_running_now = self.adb.is_game_process_running(game_package_name) if adb_connected_now else False
+
+        state_has_changed = (adb_connected_now != self.is_adb_connected) or \
+                            (emulator_env_running_now != self.is_emulator_process_running) or \
+                            (game_running_now != self.is_game_running)
+
+        if state_has_changed or is_initial_check:
+            self.is_emulator_process_running = emulator_env_running_now
+            self.is_adb_connected = adb_connected_now
+            self.is_game_running = game_running_now
+            self.after(0, self._update_ui_on_connection_change)
+            return True # Indicates a change happened
+        return False
+
+    def manual_refresh_connection(self):
+        """Public method to be called by a button to force a connection check."""
+        self.frames["Mod Manager"].status_widget.config(text="Checking...", state="disabled")
+        self.run_in_thread(self._perform_connection_check, True)
 
     def _update_ui_on_connection_change(self):
         mod_manager_frame = self.frames["Mod Manager"]
         
         if self.is_game_running:
-            mod_manager_frame.status_label.config(text="Connected", bootstyle="success")
+            mod_manager_frame.status_widget.config(text="Connected", bootstyle="success", state="disabled", command=None)
             if not self.device_has_been_scanned:
                  self.refresh_data_and_ui()
         elif self.is_adb_connected:
-            mod_manager_frame.status_label.config(text="Emulator running. Please start the game.", bootstyle="warning")
+            mod_manager_frame.status_widget.config(text="Emulator running. Please start the game.", bootstyle="warning", state="disabled", command=None)
             self.clear_device_data()
         else:
-            mod_manager_frame.status_label.config(text="Not Detected", bootstyle="danger")
+            mod_manager_frame.status_widget.config(text="Not Detected (Refresh)", bootstyle="danger", state="normal", command=self.manual_refresh_connection)
             self.clear_device_data()
 
         self.frames["Mod Manager"].update_control_state(self.is_adb_connected, self.is_game_running)

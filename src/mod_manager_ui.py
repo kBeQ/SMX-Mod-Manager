@@ -129,8 +129,8 @@ class ModManagerFrame(ttk.Frame):
         status_display_frame = ttk.Frame(log_header_frame)
         status_display_frame.pack(side='right')
         ttk.Label(status_display_frame, text="Emulator |", font=self.bold_font).pack(side='left')
-        self.status_label = ttk.Label(status_display_frame, text="Checking...", font=self.bold_font, bootstyle="warning")
-        self.status_label.pack(side='left', padx=(5, 5))
+        self.status_widget = ttk.Button(status_display_frame, text="Checking...", bootstyle="warning", state="disabled")
+        self.status_widget.pack(side='left', padx=(5, 5))
 
         self.log_output_text = ScrolledText(log_container, wrap=tk.WORD, autohide=True, height=6)
         self.log_output_text.pack(expand=True, fill='both')
