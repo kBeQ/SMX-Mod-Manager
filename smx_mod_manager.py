@@ -234,16 +234,6 @@ class App(ttk.Window):
                 return settings_adb_path
         return None
 
-    def is_emulator_environment_running(self):
-        if not self.ADB_PATH: return False
-        for proc in psutil.process_iter(['name', 'exe']):
-            try:
-                if proc.info['name'] == 'adb.exe' and proc.info['exe'] and os.path.normcase(proc.info['exe']) == os.path.normcase(self.ADB_PATH):
-                    return True
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                pass
-        return False
-
     def _connection_monitoring_loop(self):
         initial_check = True
         while not self.stop_monitoring.is_set():
@@ -251,17 +241,32 @@ class App(ttk.Window):
                 initial_check = False
             time.sleep(2.5)
 
-    def _perform_connection_check(self, is_initial_check=False):
+    def _perform_connection_check(self, is_initial_check=False, is_manual_refresh=False):
         """Checks connection status and updates UI if state has changed."""
+        if is_manual_refresh:
+            self.log_to_ui("--- Manual Refresh Triggered ---")
+
         self.ADB_PATH = self.find_adb_path()
+        if not self.ADB_PATH:
+            if is_manual_refresh: self.log_to_ui("ADB Executable not found. Please check settings.")
+            self.is_emulator_process_running = False
+            self.is_adb_connected = False
+            self.is_game_running = False
+            self.after(0, self._update_ui_on_connection_change)
+            return True
+
         game_package_name = self.setting_vars["Game Configuration"]["Game Package Name"]['var'].get()
         
-        emulator_env_running_now = self.is_emulator_environment_running()
-        adb_connected_now = self.adb.is_device_connected() if emulator_env_running_now else False
+        if is_manual_refresh: self.log_to_ui("Pinging ADB server...")
+        adb_connected_now = self.adb.is_device_connected()
+        
+        emulator_env_running_now = adb_connected_now 
+        if is_manual_refresh: self.log_to_ui(f"Device Connected: {adb_connected_now}")
+
         game_running_now = self.adb.is_game_process_running(game_package_name) if adb_connected_now else False
+        if is_manual_refresh: self.log_to_ui(f"Game Running: {game_running_now}")
 
         state_has_changed = (adb_connected_now != self.is_adb_connected) or \
-                            (emulator_env_running_now != self.is_emulator_process_running) or \
                             (game_running_now != self.is_game_running)
 
         if state_has_changed or is_initial_check:
@@ -269,13 +274,16 @@ class App(ttk.Window):
             self.is_adb_connected = adb_connected_now
             self.is_game_running = game_running_now
             self.after(0, self._update_ui_on_connection_change)
-            return True # Indicates a change happened
+            if is_manual_refresh: self.log_to_ui("Status updated.")
+            return True
+        
+        if is_manual_refresh: self.log_to_ui("No change in connection status detected.")
         return False
 
     def manual_refresh_connection(self):
         """Public method to be called by a button to force a connection check."""
         self.frames["Mod Manager"].status_widget.config(text="Checking...", state="disabled")
-        self.run_in_thread(self._perform_connection_check, True)
+        self.run_in_thread(self._perform_connection_check, is_initial_check=True, is_manual_refresh=True)
 
     def _update_ui_on_connection_change(self):
         mod_manager_frame = self.frames["Mod Manager"]
