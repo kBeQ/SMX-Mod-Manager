@@ -178,8 +178,12 @@ class ModManagerFrame(ttk.Frame):
         if self.search_var.get() != "Search...":
             self.update_mod_list()
 
-    def update_control_state(self, is_adb_connected, is_game_running):
-        modding_state = tk.NORMAL if is_game_running else tk.DISABLED
+    def update_control_state(self):
+        can_mod = self.controller.is_adb_connected and self.controller.is_mods_folder_known_to_exist
+        is_game_running = self.controller.is_game_running
+        is_adb_connected = self.controller.is_adb_connected
+
+        modding_state = tk.NORMAL if can_mod else tk.DISABLED
         self.install_button.config(state=modding_state)
         self.uninstall_button.config(state=modding_state)
         
@@ -310,7 +314,7 @@ class ModManagerFrame(ttk.Frame):
             msg = "No mods in this category."
 
         self.local_mods_frame.display_list(mods_to_display, msg)
-        self.update_control_state(self.controller.is_adb_connected, self.controller.is_game_running)
+        self.update_control_state()
 
     def apply_selection_filter(self, selection_type):
         if selection_type == "None":

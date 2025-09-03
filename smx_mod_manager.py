@@ -125,6 +125,7 @@ class App(ttk.Window):
         self.mod_mappings = {}
         self.load_config() 
         self.load_mappings()
+        self.is_mods_folder_known_to_exist = self.saved_config.get("mods_folder_exists", False)
 
         # --- Settings Registration ---
         self.register_setting("Game Configuration", "Game Package Name", "com.Evag.SMX")
@@ -208,12 +209,18 @@ class App(ttk.Window):
         """Constructs the full mods path from the package name and subfolder path."""
         package = self.setting_vars["Game Configuration"]["Game Package Name"]['var'].get()
         subfolder = self.setting_vars["Game Configuration"]["Mods Subfolder Path"]['var'].get()
+        old_path = self.full_mods_path_var.get()
+        
         # Ensure path uses forward slashes and has a trailing slash
         base_path = f"/sdcard/Android/data/{package}/".replace("\\", "/")
         full_path = os.path.join(base_path, subfolder).replace("\\", "/")
         if not full_path.endswith('/'):
             full_path += '/'
         self.full_mods_path_var.set(full_path)
+        
+        if old_path and old_path != full_path:
+            self.is_mods_folder_known_to_exist = False
+            self.log_to_ui("INFO: Game path changed. Re-verification of mods folder is required.")
 
     def ensure_initial_config(self):
         """If config.json does not exist, create it with default values."""
@@ -260,7 +267,17 @@ class App(ttk.Window):
         if is_manual_refresh: self.log_to_ui("Pinging ADB server...")
         adb_connected_now = self.adb.is_device_connected()
         
-        emulator_env_running_now = adb_connected_now 
+        # Check for mods folder existence ONLY if it's not known to exist and a device is connected
+        if adb_connected_now and not self.is_mods_folder_known_to_exist:
+            full_mods_path = self.full_mods_path_var.get().strip()
+            # Remove trailing slash for the check, as `ls -d` needs the exact folder name
+            if full_mods_path.endswith('/'):
+                full_mods_path = full_mods_path[:-1]
+            if self.adb.directory_exists(full_mods_path, self.log_to_ui):
+                self.log_to_ui("INFO: Game mods folder found on device. Modding is now enabled.")
+                self.is_mods_folder_known_to_exist = True
+                self.save_config() # Save immediately so we don't check again
+
         if is_manual_refresh: self.log_to_ui(f"Device Connected: {adb_connected_now}")
 
         game_running_now = self.adb.is_game_process_running(game_package_name) if adb_connected_now else False
@@ -270,7 +287,6 @@ class App(ttk.Window):
                             (game_running_now != self.is_game_running)
 
         if state_has_changed or is_initial_check:
-            self.is_emulator_process_running = emulator_env_running_now
             self.is_adb_connected = adb_connected_now
             self.is_game_running = game_running_now
             self.after(0, self._update_ui_on_connection_change)
@@ -289,18 +305,21 @@ class App(ttk.Window):
         mod_manager_frame = self.frames["Mod Manager"]
         
         if self.is_game_running:
-            mod_manager_frame.status_widget.config(text="Connected", bootstyle="success", state="disabled", command=None)
+            mod_manager_frame.status_widget.config(text="Game Running", bootstyle="success", state="disabled", command=None)
             if not self.device_has_been_scanned:
                  self.refresh_data_and_ui()
         elif self.is_adb_connected:
-            mod_manager_frame.status_widget.config(text="Emulator running. Please start the game.", bootstyle="warning", state="disabled", command=None)
+            if self.is_mods_folder_known_to_exist:
+                mod_manager_frame.status_widget.config(text="Emulator Connected (Ready)", bootstyle="info", state="disabled", command=None)
+            else:
+                mod_manager_frame.status_widget.config(text="Emulator - Run Game Once", bootstyle="warning", state="disabled", command=None)
             self.clear_device_data()
         else:
             mod_manager_frame.status_widget.config(text="Not Detected (Refresh)", bootstyle="danger", state="normal", command=self.manual_refresh_connection)
             self.clear_device_data()
 
-        self.frames["Mod Manager"].update_control_state(self.is_adb_connected, self.is_game_running)
-        self.frames["On Device"].update_control_state(self.is_game_running)
+        self.frames["Mod Manager"].update_control_state()
+        self.frames["On Device"].update_control_state()
 
     def clear_device_data(self):
         if self.device_has_been_scanned:
@@ -330,8 +349,8 @@ class App(ttk.Window):
             self.after(100, self.hide_loading_overlay)
 
     def refresh_data_and_ui(self):
-        if not self.is_game_running:
-            messagebox.showerror("Not Connected", "Cannot scan device because the game is not running.")
+        if not self.is_adb_connected:
+            messagebox.showerror("Not Connected", "Cannot scan device because the emulator is not connected.")
             return
 
         self.show_loading_overlay("Scanning Device...")
@@ -349,9 +368,13 @@ class App(ttk.Window):
             self.after(100, self.hide_loading_overlay)
 
     def install_mods(self, local_paths, library, category):
-        if not self.is_game_running:
-            self.log_to_ui("INSTALL FAILED: Not connected to the game.")
-            messagebox.showerror("Not Connected", "Cannot install mods because the game is not running.")
+        if not self.is_adb_connected:
+            self.log_to_ui("INSTALL FAILED: Not connected to the emulator.")
+            messagebox.showerror("Not Connected", "Cannot install mods because the emulator is not connected.")
+            return
+        if not self.is_mods_folder_known_to_exist:
+            self.log_to_ui("INSTALL FAILED: Game mods folder not found.")
+            messagebox.showerror("Setup Required", "Cannot install mods because the game's mods folder has not been found. Please launch the game at least once.")
             return
 
         target_dir = self.full_mods_path_var.get()
@@ -383,9 +406,13 @@ class App(ttk.Window):
         self.after(0, self.refresh_data_and_ui)
 
     def uninstall_mods(self, local_paths):
-        if not self.is_game_running:
-            self.log_to_ui("UNINSTALL FAILED: Not connected to the game.")
-            messagebox.showerror("Not Connected", "Cannot uninstall mods because the game is not running.")
+        if not self.is_adb_connected:
+            self.log_to_ui("UNINSTALL FAILED: Not connected to the emulator.")
+            messagebox.showerror("Not Connected", "Cannot uninstall mods because the emulator is not connected.")
+            return
+        if not self.is_mods_folder_known_to_exist:
+            self.log_to_ui("UNINSTALL FAILED: Game mods folder not found.")
+            messagebox.showerror("Setup Required", "Cannot uninstall mods because the game's mods folder has not been found. Please launch the game at least once.")
             return
             
         target_dir = self.full_mods_path_var.get()
@@ -475,6 +502,7 @@ class App(ttk.Window):
                 elif details['type'] == 'internal':
                     data_to_save[category][name] = details['value']
         
+        data_to_save['mods_folder_exists'] = self.is_mods_folder_known_to_exist
         with open(CONFIG_FILE, 'w') as f: json.dump(data_to_save, f, indent=4)
 
 

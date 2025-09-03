@@ -21,6 +21,14 @@ class AdbHandler:
         # pidof returns the PID if the process is found, and an empty string otherwise.
         return stdout is not None and stdout.strip() != ""
 
+    def directory_exists(self, path, log_func=None):
+        """Checks if a directory exists on the device."""
+        command = f"shell if [ -d '{path}' ]; then echo 'exists'; else echo 'not_exists'; fi"
+        stdout, stderr = self.send_adb_command_with_output(command)
+        if log_func and stderr:
+            log_func(f"Error checking directory '{path}': {stderr.strip()}")
+        return stdout is not None and "exists" in stdout.strip()
+
     def launch_game_activity(self, package_name, activity_name, log_func):
         full_activity = f"{package_name}/{activity_name}"
         log_func(f"Attempting to launch game: {full_activity}")

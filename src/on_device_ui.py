@@ -62,8 +62,9 @@ class OnDeviceFrame(ttk.Frame):
                 btn.config(bootstyle="secondary-outline")
         self.update_mod_list()
 
-    def update_control_state(self, is_running):
-        new_state = tk.NORMAL if is_running else tk.DISABLED
+    def update_control_state(self):
+        can_interact = self.controller.is_adb_connected and self.controller.is_mods_folder_known_to_exist
+        new_state = tk.NORMAL if can_interact else tk.DISABLED
         self.scan_button.config(state=new_state)
         self.delete_button.config(state=new_state)
 
