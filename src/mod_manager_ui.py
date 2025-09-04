@@ -18,6 +18,7 @@ class ModManagerFrame(ttk.Frame):
         self.selected_library = tk.StringVar()
         self.selected_category = tk.StringVar()
         self.library_category_memory = {}
+        self.category_buttons = {}
         
         self.source_folder_path = tk.StringVar()
         self.search_var = tk.StringVar()
@@ -245,7 +246,15 @@ class ModManagerFrame(ttk.Frame):
         self.deselect_all()
         self.selected_category.set(cat_name)
         self.library_category_memory[self.selected_library.get()] = cat_name
-        self._redraw_nav()
+        self._update_category_button_styles()
+        self.update_mod_list()
+
+    def _update_category_button_styles(self):
+        current_cat = self.selected_category.get()
+        for cat_name, btn in self.category_buttons.items():
+            if btn.winfo_exists():
+                style = "info" if cat_name == current_cat else "secondary-outline"
+                btn.config(bootstyle=style)
 
     def _redraw_nav(self):
         for widget in self.local_header_nav_area.winfo_children():
@@ -320,6 +329,7 @@ class ModManagerFrame(ttk.Frame):
             all_categories.insert(0, "Uncategorized")
         
         has_content = False
+        self.category_buttons.clear()
         for cat_name in all_categories:
             is_empty = not (self.data_manager.local_data.get(current_lib, {}).get(cat_name, []) or self.data_manager.managed_device_data.get(current_lib, {}).get(cat_name, []))
             if is_empty: continue
@@ -327,6 +337,7 @@ class ModManagerFrame(ttk.Frame):
             style = "info" if cat_name == self.selected_category.get() else "secondary-outline"
             btn = ttk.Button(scrollable_cat_frame, text=cat_name, bootstyle=style, command=lambda c=cat_name: self.on_category_select(c))
             btn.pack(side='left', padx=(0,2))
+            self.category_buttons[cat_name] = btn
         
         if not has_content:
             cat_scrollbar.pack_forget()
