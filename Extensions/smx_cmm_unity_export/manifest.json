@@ -1,8 +1,6 @@
-SMX-Mod-Manager/ (root of your git repo)
-└── Extensions/
-    ├── smx_cmm_unity_export/
-    │   ├── manifest.json      <-- NEW METADATA FILE
-    │   └── plugin.py
-    └── another_cool_extension/
-        ├── manifest.json
-        └── plugin.py
+{
+  "name": "SMX CMM Unity Export",
+  "version": "1.0.0",
+  "description": "Helps export builds from Unity directly to the mod manager's library.",
+  "author": "kbeq"
+}
