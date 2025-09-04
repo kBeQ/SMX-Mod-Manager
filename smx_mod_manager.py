@@ -15,6 +15,10 @@ import time
 import ctypes
 from PIL import Image, ImageTk
 
+# --- NEW: Imports for the extension system ---
+import importlib.util
+from pathlib import Path
+
 # Import other modules...
 from src.mod_manager_ui import ModManagerFrame
 from src.on_device_ui import OnDeviceFrame
@@ -22,21 +26,20 @@ from src.mod_helper_ui import ModHelperFrame
 from src.settings_ui import SettingsFrame
 from src.adb_handler import AdbHandler
 from src.data_manager import DataManager
+# --- NEW: Import the new UI frame and handler ---
+from src.extensions_ui import ExtensionsFrame
+from src.github_handler import GitHubHandler
+
 
 # --- Global Constants ---
 CONFIG_FILE = "config.json"
 MAPPINGS_FILE = "mod_mappings.json"
-APP_VERSION = "7.17.13"
+APP_VERSION = "7.18.0" # Version updated to reflect new features
 
-def get_script_directory():
-    """Gets the directory of the running script or frozen executable."""
-    if getattr(sys, 'frozen', False):
-        return os.path.dirname(sys.executable)
-    else:
-        return os.path.dirname(os.path.abspath(__file__))
+# THIS FUNCTION is now part of the App class below. It has been moved.
 
 def get_resource_path(filename):
-    """Return the correct path to a resource file, 
+    """Return the correct path to a resource file,
     both when running from source and when frozen with PyInstaller."""
     if getattr(sys, "frozen", False):
         base_dir = sys._MEIPASS
@@ -46,15 +49,14 @@ def get_resource_path(filename):
 
 # --- Splash Screen Class ---
 class SplashScreen:
+    # ... (This class is unchanged)
     def __init__(self, parent):
         self.parent = parent
         self.splash = tk.Toplevel(parent)
-        self.splash.overrideredirect(True)
-        self.splash.attributes('-alpha', 0)
+        self.splash.overrideredirect(True) # Remove window borders
 
         splash_image_path = get_resource_path("SMX Mod Manager.png")
         if not os.path.exists(splash_image_path):
-            # Fallback if image is missing, just close and show main app
             self.parent.after(100, self.close_splash)
             return
 
@@ -69,26 +71,13 @@ class SplashScreen:
         y = (screen_height // 2) - (img_height // 2)
 
         self.splash.geometry(f'{img_width}x{img_height}+{x}+{y}')
-        ttk.Label(self.splash, image=self.splash_image).pack()
         
-        self.parent.after(100, self.fade_in)
-
-    def fade_in(self, alpha=0):
-        if alpha < 1:
-            alpha += 0.05
-            self.splash.attributes('-alpha', alpha)
-            self.splash.after(20, lambda: self.fade_in(alpha))
-        else:
-            self.splash.attributes('-alpha', 1)
-            self.splash.after(1300, self.fade_out)
-
-    def fade_out(self, alpha=1):
-        if alpha > 0:
-            alpha -= 0.05
-            self.splash.attributes('-alpha', alpha)
-            self.splash.after(20, lambda: self.fade_out(alpha))
-        else:
-            self.close_splash()
+        transparency_key_color = 'fuchsia' 
+        self.splash.config(bg=transparency_key_color)
+        label = tk.Label(self.splash, image=self.splash_image, bg=transparency_key_color)
+        label.pack()
+        self.splash.wm_attributes('-transparentcolor', transparency_key_color)
+        self.splash.after(2000, self.close_splash)
 
     def close_splash(self):
         self.splash.destroy()
@@ -107,7 +96,6 @@ class App(ttk.Window):
         self.title(f"SMX Mod Manager v{APP_VERSION}")
         self.geometry("1400x850")
 
-        # --- Set window icon (works in both dev & frozen builds) ---
         try:
             icon_path = get_resource_path("smx_mod_manager.ico")
             if os.path.exists(icon_path):
@@ -115,38 +103,34 @@ class App(ttk.Window):
         except Exception as e:
             print(f"Could not set application icon: {e}")
         
-        # --- The rest of the original init method ---
         self.TEMP_ICON_DIR = os.path.join(tempfile.gettempdir(), "smx_mod_manager_icons")
         if os.path.exists(self.TEMP_ICON_DIR): shutil.rmtree(self.TEMP_ICON_DIR)
         os.makedirs(self.TEMP_ICON_DIR)
 
-        self.setting_vars = {} 
+        self.github_handler = GitHubHandler()
+        self.extensions = {}
+        self.setting_vars = {}
         self.saved_config = {}
         self.mod_mappings = {}
-        self.load_config() 
+        self.load_config()
         self.load_mappings()
         self.is_mods_folder_known_to_exist = self.saved_config.get("mods_folder_exists", False)
 
-        # --- Settings Registration ---
         self.register_setting("Game Configuration", "Game Package Name", "com.Evag.SMX")
         self.register_setting("Game Configuration", "Mods Subfolder Path", "files/Mods/")
         self.full_mods_path_var = self.register_setting("Game Configuration", "Full Mods Path (Auto-generated)", "", readonly=True)
         self.register_setting("Game Configuration", "Game Activity Name", "com.unity3d.player.UnityPlayerActivity")
-        
         default_gpg_adb_path = r"C:\Program Files\Google\Play Games Developer Emulator\current\emulator\adb.exe"
         self.register_setting("Advanced", "ADB Executable Override", default_gpg_adb_path, setting_type='file')
         self.register_setting("LocalLibrary", "Paths", [], 'internal')
         
-        # --- Data Migration for Library Paths ---
         self._migrate_library_config()
-
-        self.update_full_mods_path() # Initial calculation
-        
+        self.update_full_mods_path()
         self.ensure_initial_config()
 
         self.ADB_PATH = self.find_adb_path()
         if not self.ADB_PATH:
-            messagebox.showerror("ADB Not Found", 
+            messagebox.showerror("ADB Not Found",
                                  "Could not find adb.exe in the application folder or at the configured path.\n\n"
                                  "Please place adb.exe in the app folder or configure its location in the 'Advanced' section of the Settings tab.")
 
@@ -155,63 +139,126 @@ class App(ttk.Window):
         self.loading_overlay = None
         self.device_has_been_scanned = False
         self.is_adb_connected = False
-        self.is_emulator_process_running = False
         self.is_game_running = False
         self.stop_monitoring = threading.Event()
         self.header_image_path = get_resource_path("SMX Mod Manager.png")
 
-        nav_frame = ttk.Frame(self)
-        nav_frame.pack(side="top", fill="x", padx=1, pady=1)
+        self._load_extensions()
+
+        self.nav_frame = ttk.Frame(self)
+        self.nav_frame.pack(side="top", fill="x", padx=1, pady=1)
         self.nav_buttons = {}
-        for name in ["Mod Manager", "On Device", "Mod Helper", "Settings"]:
-            button = ttk.Button(nav_frame, text=name, command=lambda n=name: self.show_frame(n), bootstyle="secondary", padding=(0, 10))
+        
+        self.core_frames = ["Mod Manager", "On Device", "Extensions", "Mod Helper", "Settings"]
+        for name in self.core_frames:
+            button = ttk.Button(self.nav_frame, text=name, command=lambda n=name: self.show_frame(n), bootstyle="secondary", padding=(0, 10))
             button.pack(side="left", fill="x", expand=True, padx=(0,1))
             self.nav_buttons[name] = button
 
-        container = ttk.Frame(self)
-        container.pack(side="top", fill="both", expand=True)
-        container.grid_rowconfigure(0, weight=1)
-        container.grid_columnconfigure(0, weight=1)
+        self.container = ttk.Frame(self)
+        self.container.pack(side="top", fill="both", expand=True)
+        self.container.grid_rowconfigure(0, weight=1)
+        self.container.grid_columnconfigure(0, weight=1)
         self.frames = {}
         
-        for F in (ModManagerFrame, OnDeviceFrame, ModHelperFrame, SettingsFrame):
-            frame = F(container, self)
+        for F in (ModManagerFrame, OnDeviceFrame, ExtensionsFrame, ModHelperFrame, SettingsFrame):
+            frame = F(self.container, self)
             self.frames[F.name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
-        
+
+        if self.extensions:
+            print(f"INFO: Initializing {len(self.extensions)} loaded extension(s)...")
+            for ext in self.extensions.values():
+                try:
+                    ext.initialize(self)
+                except Exception as e:
+                    print(f"ERROR: Failed to initialize extension '{ext.name}': {e}")
+            print("--- Extension initialization complete ---")
+
         self.show_frame("Mod Manager")
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
         
         monitor_thread = threading.Thread(target=self._connection_monitoring_loop, daemon=True)
         monitor_thread.start()
 
+    # --- THE FIX IS HERE ---
+    # Moved get_script_directory INSIDE the App class to make it a method.
+    def get_script_directory(self):
+        """Gets the directory of the running script or frozen executable."""
+        if getattr(sys, 'frozen', False):
+            return os.path.dirname(sys.executable)
+        else:
+            return os.path.dirname(os.path.abspath(__file__))
+
+    def _load_extensions(self):
+        """Discovers and loads all valid extensions from the local directory."""
+        ext_dir = Path(self.get_script_directory()) / "Extensions" # Now calls the method
+        if not ext_dir.is_dir():
+            print("INFO: No 'Extensions' directory found. Skipping extension loading.")
+            return
+
+        print("--- Scanning for local extensions ---")
+        for potential_ext_dir in ext_dir.iterdir():
+            manifest_file = potential_ext_dir / "manifest.json"
+            plugin_file = potential_ext_dir / "plugin.py"
+            if potential_ext_dir.is_dir() and manifest_file.is_file() and plugin_file.is_file():
+                module_name = f"extensions.{potential_ext_dir.name}.plugin"
+                try:
+                    spec = importlib.util.spec_from_file_location(module_name, plugin_file)
+                    module = importlib.util.module_from_spec(spec)
+                    sys.modules[module_name] = module
+                    spec.loader.exec_module(module)
+
+                    if hasattr(module, "SMXExtension"):
+                        ext_instance = module.SMXExtension()
+                        if ext_instance.name in self.extensions:
+                            print(f"WARNING: Duplicate extension name '{ext_instance.name}'. Skipping.")
+                            continue
+                        self.extensions[ext_instance.name] = ext_instance
+                        print(f"  OK: Loaded extension '{ext_instance.name}'")
+                    else:
+                        print(f"WARNING: '{plugin_file}' does not contain an SMXExtension class.")
+                except Exception as e:
+                    print(f"ERROR: Failed to load extension from '{potential_ext_dir.name}': {e}")
+        print(f"--- Found {len(self.extensions)} valid local extension(s) ---")
+
+    def add_extension_tab(self, name, frame_class):
+        """API for extensions to add their own UI tabs."""
+        if name in self.frames:
+            print(f"WARNING: A frame with the name '{name}' already exists. Cannot add extension tab.")
+            return
+
+        button = ttk.Button(self.nav_frame, text=name, command=lambda n=name: self.show_frame(n), bootstyle="secondary", padding=(0, 10))
+        button.pack(side="left", fill="x", expand=True, padx=(0,1))
+        self.nav_buttons[name] = button
+
+        frame = frame_class(self.container, self)
+        self.frames[name] = frame
+        frame.grid(row=0, column=0, sticky="nsew")
+        print(f"  -> Extension '{name}' successfully added a UI tab.")
+
     def _migrate_library_config(self):
-        """Converts old list-of-strings library paths to new list-of-dicts format."""
         lib_setting = self.setting_vars.get("LocalLibrary", {}).get("Paths")
         if not lib_setting: return
 
         current_libs = lib_setting['value']
         if not current_libs or isinstance(current_libs[0], dict):
-            return # Already new format, empty, or invalid
+            return
 
-        # Old format detected: a list of strings
         print("INFO: Old library config format detected. Migrating to new format.")
         new_libs_data = []
         for path in current_libs:
             if isinstance(path, str):
-                # Default migrated libraries to "Tracks". The user can change this in settings.
                 new_libs_data.append({'type': 'Tracks', 'path': path})
         
         self.setting_vars["LocalLibrary"]["Paths"]['value'] = new_libs_data
-        self.save_config() # Save the migrated config immediately to prevent re-migration
+        self.save_config()
 
     def update_full_mods_path(self, *args):
-        """Constructs the full mods path from the package name and subfolder path."""
         package = self.setting_vars["Game Configuration"]["Game Package Name"]['var'].get()
         subfolder = self.setting_vars["Game Configuration"]["Mods Subfolder Path"]['var'].get()
         old_path = self.full_mods_path_var.get()
         
-        # Ensure path uses forward slashes and has a trailing slash
         base_path = f"/sdcard/Android/data/{package}/".replace("\\", "/")
         full_path = os.path.join(base_path, subfolder).replace("\\", "/")
         if not full_path.endswith('/'):
@@ -223,14 +270,12 @@ class App(ttk.Window):
             self.log_to_ui("INFO: Game path changed. Re-verification of mods folder is required.")
 
     def ensure_initial_config(self):
-        """If config.json does not exist, create it with default values."""
         if not os.path.exists(CONFIG_FILE):
             print("INFO: config.json not found, creating with default values.")
             self.save_config()
 
     def find_adb_path(self):
-        """Finds a usable adb.exe path using a priority system."""
-        local_adb_path = os.path.join(get_script_directory(), "bin", "adb.exe")
+        local_adb_path = os.path.join(self.get_script_directory(), "bin", "adb.exe") # Now calls the method
         if os.path.exists(local_adb_path):
             return local_adb_path
 
@@ -249,14 +294,12 @@ class App(ttk.Window):
             time.sleep(2.5)
 
     def _perform_connection_check(self, is_initial_check=False, is_manual_refresh=False):
-        """Checks connection status and updates UI if state has changed."""
         if is_manual_refresh:
             self.log_to_ui("--- Manual Refresh Triggered ---")
 
         self.ADB_PATH = self.find_adb_path()
         if not self.ADB_PATH:
             if is_manual_refresh: self.log_to_ui("ADB Executable not found. Please check settings.")
-            self.is_emulator_process_running = False
             self.is_adb_connected = False
             self.is_game_running = False
             self.after(0, self._update_ui_on_connection_change)
@@ -264,40 +307,29 @@ class App(ttk.Window):
 
         game_package_name = self.setting_vars["Game Configuration"]["Game Package Name"]['var'].get()
         
-        if is_manual_refresh: self.log_to_ui("Pinging ADB server...")
         adb_connected_now = self.adb.is_device_connected()
         
-        # Check for mods folder existence ONLY if it's not known to exist and a device is connected
         if adb_connected_now and not self.is_mods_folder_known_to_exist:
             full_mods_path = self.full_mods_path_var.get().strip()
-            # Remove trailing slash for the check, as `ls -d` needs the exact folder name
             if full_mods_path.endswith('/'):
                 full_mods_path = full_mods_path[:-1]
             if self.adb.directory_exists(full_mods_path, self.log_to_ui):
                 self.log_to_ui("INFO: Game mods folder found on device. Modding is now enabled.")
                 self.is_mods_folder_known_to_exist = True
-                self.save_config() # Save immediately so we don't check again
-
-        if is_manual_refresh: self.log_to_ui(f"Device Connected: {adb_connected_now}")
+                self.save_config()
 
         game_running_now = self.adb.is_game_process_running(game_package_name) if adb_connected_now else False
-        if is_manual_refresh: self.log_to_ui(f"Game Running: {game_running_now}")
-
-        state_has_changed = (adb_connected_now != self.is_adb_connected) or \
-                            (game_running_now != self.is_game_running)
+        state_has_changed = (adb_connected_now != self.is_adb_connected) or (game_running_now != self.is_game_running)
 
         if state_has_changed or is_initial_check:
             self.is_adb_connected = adb_connected_now
             self.is_game_running = game_running_now
             self.after(0, self._update_ui_on_connection_change)
-            if is_manual_refresh: self.log_to_ui("Status updated.")
             return True
         
-        if is_manual_refresh: self.log_to_ui("No change in connection status detected.")
         return False
 
     def manual_refresh_connection(self):
-        """Public method to be called by a button to force a connection check."""
         self.frames["Mod Manager"].status_widget.config(text="Checking...", state="disabled")
         self.run_in_thread(self._perform_connection_check, is_initial_check=True, is_manual_refresh=True)
 
@@ -334,7 +366,6 @@ class App(ttk.Window):
         self.run_in_thread(self._threaded_initial_scan)
 
     def refresh_local_data_and_ui(self):
-        """Refreshes just the local mod data and updates the UI."""
         self.show_loading_overlay("Refreshing Local Mods...")
         self.run_in_thread(self._threaded_initial_scan)
         
@@ -352,7 +383,6 @@ class App(ttk.Window):
         if not self.is_adb_connected:
             messagebox.showerror("Not Connected", "Cannot scan device because the emulator is not connected.")
             return
-
         self.show_loading_overlay("Scanning Device...")
         self.device_has_been_scanned = True
         self.run_in_thread(self._threaded_refresh)
@@ -368,18 +398,12 @@ class App(ttk.Window):
             self.after(100, self.hide_loading_overlay)
 
     def install_mods(self, local_paths, library, category):
-        if not self.is_adb_connected:
-            self.log_to_ui("INSTALL FAILED: Not connected to the emulator.")
-            messagebox.showerror("Not Connected", "Cannot install mods because the emulator is not connected.")
+        if not self.is_adb_connected or not self.is_mods_folder_known_to_exist:
+            messagebox.showerror("Cannot Install", "Emulator not connected or game mods folder not found. Please connect and run the game once.")
             return
-        if not self.is_mods_folder_known_to_exist:
-            self.log_to_ui("INSTALL FAILED: Game mods folder not found.")
-            messagebox.showerror("Setup Required", "Cannot install mods because the game's mods folder has not been found. Please launch the game at least once.")
-            return
-
+            
         target_dir = self.full_mods_path_var.get()
         log_func = self.log_to_ui
-        
         for path in local_paths:
             mod_name = os.path.basename(path)
             try:
@@ -395,7 +419,7 @@ class App(ttk.Window):
                     existing_indices = {int(re.search(r'mod_(\d+)_', mod).group(1)) for mod in device_mods if re.search(r'mod_(\d+)_', mod)}
                     next_index = 0
                     while next_index in existing_indices: next_index += 1
-                    safe_mod_name = mod_name.replace(" ", "_")
+                    safe_mod_name = re.sub(r'[^\w.-]', '_', mod_name)
                     new_device_folder = f"mod_{next_index}_{safe_mod_name}"
                     self.adb.push_mod(path, new_device_folder, target_dir, log_func)
                     self.mod_mappings[path] = {'index': next_index, 'device_folder': new_device_folder, 'library': library, 'category': category}
@@ -406,15 +430,10 @@ class App(ttk.Window):
         self.after(0, self.refresh_data_and_ui)
 
     def uninstall_mods(self, local_paths):
-        if not self.is_adb_connected:
-            self.log_to_ui("UNINSTALL FAILED: Not connected to the emulator.")
-            messagebox.showerror("Not Connected", "Cannot uninstall mods because the emulator is not connected.")
+        if not self.is_adb_connected or not self.is_mods_folder_known_to_exist:
+            messagebox.showerror("Cannot Uninstall", "Emulator not connected or game mods folder not found. Please connect and run the game once.")
             return
-        if not self.is_mods_folder_known_to_exist:
-            self.log_to_ui("UNINSTALL FAILED: Game mods folder not found.")
-            messagebox.showerror("Setup Required", "Cannot uninstall mods because the game's mods folder has not been found. Please launch the game at least once.")
-            return
-            
+
         target_dir = self.full_mods_path_var.get()
         log_func = self.log_to_ui
         for path in local_paths:
@@ -442,6 +461,17 @@ class App(ttk.Window):
             package_name = self.setting_vars["Game Configuration"]["Game Package Name"]['var'].get()
             self.run_in_thread(self.adb.force_stop_package, package_name, self.log_to_ui)
 
+    def open_folder_in_explorer(self, path):
+        if not path or not os.path.isdir(path):
+            messagebox.showerror("Path Not Found", f"The folder path could not be found:\n\n{path}")
+            return
+        try:
+            if sys.platform == "win32": os.startfile(os.path.normpath(path))
+            elif sys.platform == "darwin": subprocess.Popen(["open", path])
+            else: subprocess.Popen(["xdg-open", path])
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred while trying to open the folder:\n\n{e}")
+
     def log_to_ui(self, message):
         self.frames["Mod Manager"].log(message)
 
@@ -449,16 +479,17 @@ class App(ttk.Window):
         if not self.loading_overlay:
             self.loading_overlay = tk.Toplevel(self)
             self.loading_overlay.transient(self)
-            self.loading_overlay.geometry("200x100")
+            self.loading_overlay.overrideredirect(True)
+            self.loading_overlay.geometry("250x100")
             style = ttk.Style()
             bg_color = style.colors.get('bg')
             fg_color = style.colors.get('fg')
             self.loading_overlay.configure(bg=bg_color)
-            self.loading_overlay.overrideredirect(True)
-            x = self.winfo_x() + self.winfo_width() // 2 - 100
+            x = self.winfo_x() + self.winfo_width() // 2 - 125
             y = self.winfo_y() + self.winfo_height() // 2 - 50
             self.loading_overlay.geometry(f"+{x}+{y}")
-            ttk.Label(self.loading_overlay, text=text, background=bg_color, foreground=fg_color, font=("Helvetica", 12, "bold")).pack(expand=True)
+            label = ttk.Label(self.loading_overlay, text=text, wraplength=230, justify='center', background=bg_color, foreground=fg_color, font=("Helvetica", 12, "bold"))
+            label.pack(expand=True, fill='both', padx=10, pady=10)
             self.loading_overlay.grab_set()
 
     def hide_loading_overlay(self):
@@ -470,12 +501,7 @@ class App(ttk.Window):
     def register_setting(self, category, name, default_value, setting_type='text', readonly=False):
         if category not in self.setting_vars: self.setting_vars[category] = {}
         current_value = self.saved_config.get(category, {}).get(name, default_value)
-        var = None
-        if setting_type == 'list':
-            var_value = ", ".join(current_value) if isinstance(current_value, list) else current_value
-            var = tk.StringVar(value=var_value)
-        elif setting_type != 'internal':
-             var = tk.StringVar(value=current_value)
+        var = tk.StringVar(value=current_value) if setting_type != 'internal' else None
         self.setting_vars[category][name] = {'var': var, 'type': setting_type, 'readonly': readonly, 'value': current_value}
         return var
 
@@ -491,20 +517,11 @@ class App(ttk.Window):
             data_to_save[category] = {}
             for name, details in settings.items():
                 if details.get('var'):
-                    if details['type'] == 'list':
-                        str_value = details['var'].get()
-                        list_value = [item.strip() for item in str_value.split(',') if item.strip()]
-                        data_to_save[category][name] = list_value
-                        details['value'] = list_value
-                    # Don't save the auto-generated path to the config file
-                    elif name != "Full Mods Path (Auto-generated)":
-                        data_to_save[category][name] = details['var'].get()
+                    data_to_save[category][name] = details['var'].get()
                 elif details['type'] == 'internal':
                     data_to_save[category][name] = details['value']
-        
         data_to_save['mods_folder_exists'] = self.is_mods_folder_known_to_exist
         with open(CONFIG_FILE, 'w') as f: json.dump(data_to_save, f, indent=4)
-
 
     def load_mappings(self):
         try:
@@ -515,6 +532,13 @@ class App(ttk.Window):
         with open(MAPPINGS_FILE, 'w') as f: json.dump(self.mod_mappings, f, indent=4)
 
     def on_closing(self):
+        print("INFO: Shutting down extensions...")
+        for ext in self.extensions.values():
+            try:
+                ext.on_close()
+            except Exception as e:
+                print(f"ERROR during on_close for extension '{ext.name}': {e}")
+
         self.stop_monitoring.set()
         self.save_config()
         self.save_mappings()
@@ -522,23 +546,20 @@ class App(ttk.Window):
             try:
                 shutil.rmtree(self.TEMP_ICON_DIR)
             except Exception as e:
-                # This prevents a file lock on a temp image from blocking the app closing
                 print(f"Note: Could not remove temp directory on exit: {e}")
         self.destroy()
 
     def show_frame(self, page_name):
-        frame = self.frames[page_name]
-        if page_name == "Settings":
-            frame.build_ui()
-        frame.tkraise()
-        for name, button in self.nav_buttons.items():
-            if name == page_name:
-                button.config(bootstyle="primary")
-            else:
-                button.config(bootstyle="secondary")
+        if page_name in self.frames:
+            frame = self.frames[page_name]
+            if page_name == "Settings":
+                frame.build_ui()
+            frame.tkraise()
+            for name, button in self.nav_buttons.items():
+                button.config(bootstyle="primary" if name == page_name else "secondary")
     
-    def run_in_thread(self, target_func, *args):
-        threading.Thread(target=target_func, args=args, daemon=True).start()
+    def run_in_thread(self, target_func, *args, **kwargs):
+        threading.Thread(target=target_func, args=args, kwargs=kwargs, daemon=True).start()
 
     def get_local_library_paths(self):
         return self.setting_vars["LocalLibrary"]["Paths"]['value']

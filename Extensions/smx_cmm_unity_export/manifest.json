@@ -1,0 +1,8 @@
+SMX-Mod-Manager/ (root of your git repo)
+└── Extensions/
+    ├── smx_cmm_unity_export/
+    │   ├── manifest.json      <-- NEW METADATA FILE
+    │   └── plugin.py
+    └── another_cool_extension/
+        ├── manifest.json
+        └── plugin.py

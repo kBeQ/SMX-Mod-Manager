@@ -252,11 +252,21 @@ class ModManagerFrame(ttk.Frame):
             widget.destroy()
         
         library_definitions = self.controller.get_local_library_paths()
+        name_to_path_map = {os.path.basename(lib['path']): lib['path'] for lib in library_definitions}
         type_map = {os.path.basename(lib['path']): lib.get('type', '???') for lib in library_definitions}
         all_libraries = sorted(list(set(self.data_manager.local_data.keys()) | set(self.data_manager.managed_device_data.keys())))
         
         lib_frame = ttk.Frame(self.local_header_nav_area)
         lib_frame.pack(fill='x')
+
+        current_lib_name = self.selected_library.get()
+        current_lib_path = name_to_path_map.get(current_lib_name)
+        open_lib_folder_btn = ttk.Button(lib_frame, text="📂", 
+                                         command=lambda p=current_lib_path: self.controller.open_folder_in_explorer(p),
+                                         bootstyle="info-outline", width=2)
+        open_lib_folder_btn.pack(side='left', padx=(0, 10))
+        if not current_lib_path:
+            open_lib_folder_btn.config(state=tk.DISABLED)
 
         for lib_name in all_libraries:
             lib_type = type_map.get(lib_name, '???')
@@ -268,13 +278,37 @@ class ModManagerFrame(ttk.Frame):
 
         cat_container = ttk.Frame(self.local_header_nav_area)
         cat_container.pack(fill='x', expand=True, pady=(4,0))
-        cat_canvas = tk.Canvas(cat_container, highlightthickness=0, bg=self.winfo_toplevel().style.lookup('TFrame', 'background'))
-        cat_scrollbar = ttk.Scrollbar(cat_container, orient="horizontal", command=cat_canvas.xview, bootstyle="round")
+        
+        # --- Category Open Folder Button ---
+        current_cat_name = self.selected_category.get()
+        open_cat_folder_btn = ttk.Button(cat_container, text="📂",
+                                     bootstyle="info-outline", width=2)
+        open_cat_folder_btn.pack(side='left', padx=(0, 10), anchor='n')
+        
+        current_cat_path = None
+        # Determine path for category folder, ensuring it's not "Uncategorized"
+        if current_lib_path and current_cat_name and current_cat_name != "Uncategorized":
+            current_cat_path = os.path.join(current_lib_path, f"c_{current_cat_name}")
+        
+        if current_cat_path and os.path.isdir(current_cat_path):
+            open_cat_folder_btn.config(command=lambda p=current_cat_path: self.controller.open_folder_in_explorer(p))
+        else:
+            open_cat_folder_btn.config(state=tk.DISABLED) # Disable for "Uncategorized" or if path doesn't exist
+
+        # --- Scrollable Area for Category Buttons ---
+        scroll_area = ttk.Frame(cat_container)
+        scroll_area.pack(side='left', fill='x', expand=True)
+
+        cat_canvas = tk.Canvas(scroll_area, highlightthickness=0, bg=self.winfo_toplevel().style.lookup('TFrame', 'background'))
+        cat_scrollbar = ttk.Scrollbar(scroll_area, orient="horizontal", command=cat_canvas.xview, bootstyle="round")
         cat_canvas.configure(xscrollcommand=cat_scrollbar.set)
+        
         scrollable_cat_frame = ttk.Frame(cat_canvas)
         cat_canvas.create_window((0, 0), window=scrollable_cat_frame, anchor="nw")
+        
         def on_cat_frame_configure(event):
             cat_canvas.configure(scrollregion=cat_canvas.bbox("all"), height=scrollable_cat_frame.winfo_height())
+        
         scrollable_cat_frame.bind("<Configure>", on_cat_frame_configure)
         cat_canvas.pack(side="top", fill="x", expand=True)
         cat_scrollbar.pack(side="top", fill="x", expand=True)
