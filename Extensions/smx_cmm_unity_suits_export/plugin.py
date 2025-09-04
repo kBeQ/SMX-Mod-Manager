@@ -6,16 +6,17 @@ from ttkbootstrap.constants import *
 import os
 import zipfile
 import shutil
+import tempfile
+
 
 class CMMUnitySuitsExportFrame(ttk.Frame):
     """The UI frame that will be displayed in the new tab."""
-    # The name is now more specific
     name = "SMX CMM Unity Suits Export"
 
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        self.extension_name = "SMX CMM Unity Suits Export" # Use the new name consistently
+        self.extension_name = "SMX CMM Unity Suits Export"
         self.found_mods = {}
 
         # --- Settings Variable & Loading ---
@@ -49,6 +50,7 @@ class CMMUnitySuitsExportFrame(ttk.Frame):
         action_frame = ttk.Labelframe(main_frame, text="Export Process", padding=15)
         action_frame.pack(fill=BOTH, expand=True, pady=20)
         action_frame.grid_columnconfigure(0, weight=1)
+        action_frame.grid_rowconfigure(2, weight=1) # Allow listbox to expand vertically
 
         # Scan Button
         scan_button_frame = ttk.Frame(action_frame)
@@ -64,10 +66,12 @@ class CMMUnitySuitsExportFrame(ttk.Frame):
         self.results_listbox.grid(row=2, column=0, columnspan=2, sticky='nsew', pady=(5, 10))
         
         # Destination Library Dropdown
-        ttk.Label(action_frame, text="Destination Library:").grid(row=3, column=0, sticky='w', pady=(5,0))
+        dest_frame = ttk.Frame(action_frame)
+        dest_frame.grid(row=3, column=0, columnspan=2, sticky='ew', pady=(5,0))
+        ttk.Label(dest_frame, text="Destination Library:").pack(side=LEFT)
         self.destination_library_var = tk.StringVar()
-        self.destination_combo = ttk.Combobox(action_frame, textvariable=self.destination_library_var, state='readonly')
-        self.destination_combo.grid(row=3, column=1, sticky='ew', pady=(5,0), padx=(10,0))
+        self.destination_combo = ttk.Combobox(dest_frame, textvariable=self.destination_library_var, state='readonly')
+        self.destination_combo.pack(side=LEFT, expand=True, fill=X, padx=(10,0))
         self.populate_destination_libraries()
 
         # Export Button
@@ -141,7 +145,7 @@ class CMMUnitySuitsExportFrame(ttk.Frame):
         self.export_button.config(state='normal' if count > 0 else 'disabled')
 
     def export_selected_mods(self):
-        """Extracts the selected zipped mods into the chosen destination library."""
+        """Extracts the selected zipped mods into the chosen destination library, handling nested folders."""
         selected_indices = self.results_listbox.curselection()
         if not selected_indices:
             messagebox.showwarning("No Selection", "Please select one or more mods from the list to export.")
@@ -171,23 +175,49 @@ class CMMUnitySuitsExportFrame(ttk.Frame):
                 skipped_count += 1
                 continue
 
+            temp_dir = None
             try:
+                # 1. Define final destination paths
                 category_folder_path = os.path.join(dest_lib_path, f"c_{mod_info['category']}")
                 os.makedirs(category_folder_path, exist_ok=True)
-                
                 final_mod_path = os.path.join(category_folder_path, mod_info['mod_name'])
+
+                # 2. Create a secure temporary directory for extraction
+                temp_dir = tempfile.mkdtemp()
                 
+                # 3. Extract the entire zip to the temporary directory
+                with zipfile.ZipFile(mod_info['zip_path'], 'r') as zip_ref:
+                    zip_ref.extractall(temp_dir)
+                
+                # 4. Inspect contents to find the correct source for moving
+                extracted_items = os.listdir(temp_dir)
+                source_for_move = temp_dir
+                
+                if len(extracted_items) == 1 and os.path.isdir(os.path.join(temp_dir, extracted_items[0])):
+                    source_for_move = os.path.join(temp_dir, extracted_items[0])
+                    # Move all contents from the subfolder up one level
+                    for item_name in os.listdir(source_for_move):
+                        shutil.move(os.path.join(source_for_move, item_name), temp_dir)
+                    # Remove the now-empty subfolder
+                    os.rmdir(source_for_move)
+
+                # 5. Clean up final destination and move the prepared files
                 if os.path.exists(final_mod_path):
                     shutil.rmtree(final_mod_path)
                 
-                with zipfile.ZipFile(mod_info['zip_path'], 'r') as zip_ref:
-                    zip_ref.extractall(final_mod_path)
+                shutil.move(temp_dir, final_mod_path)
+                temp_dir = None # Set to None to prevent double deletion in finally block
                 
                 exported_count += 1
+
             except Exception as e:
                 print(f"ERROR exporting {mod_info['mod_name']}: {e}")
                 messagebox.showerror("Export Error", f"An error occurred while exporting {mod_info['mod_name']}:\n\n{e}")
                 break
+            finally:
+                # 6. Always clean up the temporary directory if it still exists
+                if temp_dir and os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir)
 
         self.controller.hide_loading_overlay()
         messagebox.showinfo("Export Complete", f"Successfully exported {exported_count} mod(s).\nSkipped {skipped_count} mod(s) (no zip found).")
@@ -198,16 +228,14 @@ class CMMUnitySuitsExportFrame(ttk.Frame):
 class SMXExtension:
     """This is the main entry point for the extension."""
     def __init__(self):
-        # Update the name and description to be more specific
         self.name = "SMX CMM Unity Suits Export"
         self.description = "Scans a Unity project folder for zipped suit mods and exports them to your library."
-        self.version = "1.1.0"
+        self.version = "1.2.0" # Version bumped for new unzipping logic
 
     def initialize(self, app):
         """Called by the main application to let the extension integrate itself."""
         print(f"INFO: Initializing extension '{self.name}' v{self.version}")
         self.app = app
-        # The frame class name was also updated
         self.app.add_extension_tab(self.name, CMMUnitySuitsExportFrame)
 
     def on_close(self):

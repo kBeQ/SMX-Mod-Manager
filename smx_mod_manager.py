@@ -10,7 +10,6 @@ import json
 import tempfile
 import shutil
 import re
-import psutil
 import time
 import ctypes
 from PIL import Image, ImageTk
