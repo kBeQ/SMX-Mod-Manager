@@ -16,13 +16,19 @@ class ExtensionsFrame(ttk.Frame):
         self.available_extensions = {}
         self.installed_extensions = {}
 
+        # --- Restart Banner (initially hidden) ---
+        self.restart_banner = ttk.Frame(self, bootstyle="warning", padding=10)
+        ttk.Label(self.restart_banner, text="A restart is required to apply changes.", bootstyle="inverse-warning").pack(side=LEFT, padx=(0, 10))
+        ttk.Button(self.restart_banner, text="Restart Now", command=self.controller.restart_app, bootstyle="danger").pack(side=LEFT)
+        # The banner will be packed into view by the show_restart_banner() method when needed.
+
         # --- Main Layout ---
-        main_pane = ttk.PanedWindow(self, orient=HORIZONTAL)
-        main_pane.pack(fill=BOTH, expand=True, padx=15, pady=15)
+        self.main_pane = ttk.PanedWindow(self, orient=HORIZONTAL)
+        self.main_pane.pack(fill=BOTH, expand=True, padx=15, pady=15)
 
         # --- Left Pane: Available Online ---
-        left_frame = ttk.Labelframe(main_pane, text="Available for Download", padding=10)
-        main_pane.add(left_frame, weight=1)
+        left_frame = ttk.Labelframe(self.main_pane, text="Available for Download", padding=10)
+        self.main_pane.add(left_frame, weight=1)
 
         header_frame = ttk.Frame(left_frame)
         header_frame.pack(fill=X, pady=(0, 10))
@@ -34,8 +40,8 @@ class ExtensionsFrame(ttk.Frame):
         self.online_list_frame.pack(fill=BOTH, expand=True)
 
         # --- Right Pane: Installed ---
-        right_frame = ttk.Labelframe(main_pane, text="Installed Locally", padding=10)
-        main_pane.add(right_frame, weight=1)
+        right_frame = ttk.Labelframe(self.main_pane, text="Installed Locally", padding=10)
+        self.main_pane.add(right_frame, weight=1)
         self.installed_list_frame = ScrolledFrame(right_frame, autohide=True)
         self.installed_list_frame.pack(fill=BOTH, expand=True)
 
@@ -79,7 +85,6 @@ class ExtensionsFrame(ttk.Frame):
             btn_frame = ttk.Frame(card, bootstyle="dark")
             btn_frame.pack(fill=X, pady=(10,0))
             
-            # Logic to show Install / Update / Installed button
             if name in self.installed_extensions:
                 installed_version = self.installed_extensions[name].get('version', '0.0.0')
                 online_version = meta.get('version', '0.0.0')
@@ -101,12 +106,11 @@ class ExtensionsFrame(ttk.Frame):
             manifest_path = os.path.join(item_path, "manifest.json")
             if os.path.isdir(item_path) and os.path.isfile(manifest_path):
                 try:
-                    with open(manifest_path, 'r') as f:
+                    with open(manifest_path, 'r', encoding='utf-8') as f:
                         self.installed_extensions[item_name] = json.load(f)
                 except Exception as e:
                     print(f"Could not load manifest for installed extension '{item_name}': {e}")
         
-        # Now, draw the UI
         for widget in self.installed_list_frame.winfo_children():
             widget.destroy()
             
@@ -136,8 +140,8 @@ class ExtensionsFrame(ttk.Frame):
     def on_install_complete(self, success):
         self.controller.hide_loading_overlay()
         if success:
-            ttk.dialogs.Messagebox.ok("Installation complete. Please restart the application for the new extension to be active.", "Restart Required")
-            self.refresh_online_list() # This will update button states
+            self.show_restart_banner()
+            self.refresh_online_list()
         else:
             ttk.dialogs.Messagebox.show_error("Installation failed. Check the console for more details.", "Error")
             self.status_label.config(text="Installation failed.", bootstyle="danger")
@@ -150,8 +154,12 @@ class ExtensionsFrame(ttk.Frame):
         try:
             import shutil
             shutil.rmtree(ext_path)
-            ttk.dialogs.Messagebox.ok("Uninstallation complete. Please restart the application for changes to take effect.", "Restart Required")
+            self.show_restart_banner()
             self.populate_installed_list()
             self.populate_online_list()
         except Exception as e:
             ttk.dialogs.Messagebox.show_error(f"Could not uninstall extension: {e}", "Error")
+
+    def show_restart_banner(self):
+        """Makes the restart banner visible at the top of the frame."""
+        self.restart_banner.pack(side=TOP, fill=X, padx=15, pady=(15, 0), before=self.main_pane)

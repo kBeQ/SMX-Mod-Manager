@@ -1,82 +1,88 @@
 # --- Filename: Extensions/smx_cmm_unity_export/plugin.py ---
 import tkinter as tk
+from tkinter import filedialog # Import filedialog directly
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 import os
 
-# 1. Define the UI for the new tab
 class CMMUnityExportFrame(ttk.Frame):
     """The UI frame that will be displayed in the new tab."""
-    # The 'name' attribute is not strictly needed here but good practice
     name = "SMX CMM Unity Export"
 
     def __init__(self, parent, controller):
         super().__init__(parent)
-        self.controller = controller # The main App instance
+        self.controller = controller
+        self.extension_name = "SMX CMM Unity Export" # Consistent name for settings
 
-        # Get the path from settings, if it exists
-        unity_path_var = self.controller.setting_vars.get(self.name, {}).get("Unity Project Path", {}).get('var')
+        # --- Settings Variable ---
+        self.unity_project_path_var = tk.StringVar()
         
+        # --- Load the saved setting using the new API ---
+        saved_path = self.controller.get_extension_setting(
+            extension_name=self.extension_name,
+            setting_key='unity_project_path',
+            default=""
+        )
+        self.unity_project_path_var.set(saved_path)
+
+        # --- UI ---
         main_frame = ttk.Frame(self, padding=20)
-        main_frame.pack(expand=True, fill=BOTH)
+        main_frame.pack(expand=True, fill=BOTH, padx=10, pady=10)
 
-        ttk.Label(main_frame, text="SMX CMM Unity Export", font=("Helvetica", 16, "bold")).pack(pady=(0,10))
-        ttk.Label(main_frame, text="This extension helps streamline exporting mods from your Unity project.", wraplength=600).pack(pady=(0, 20))
+        ttk.Label(main_frame, text=self.extension_name, font=("Helvetica", 16, "bold")).pack(pady=(0,10), anchor='w')
+        ttk.Label(main_frame, text="This extension helps streamline exporting mods from your Unity project.", wraplength=600).pack(pady=(0, 20), anchor='w')
 
-        path_frame = ttk.Labelframe(main_frame, text="Configured Unity Project Path", padding=10)
-        path_frame.pack(fill=X, pady=10)
+        # --- Settings UI is now part of this frame ---
+        settings_frame = ttk.Labelframe(main_frame, text="Settings", padding=15)
+        settings_frame.pack(fill=X, pady=10)
+
+        ttk.Label(settings_frame, text="Unity Project Path:").grid(row=0, column=0, sticky='w', pady=(0, 5))
         
-        if unity_path_var:
-            path_label = ttk.Entry(path_frame, textvariable=unity_path_var, state="readonly")
-            path_label.pack(side=LEFT, fill=X, expand=True, padx=(0,10))
-            ttk.Button(path_frame, text="Go to Settings to change", command=lambda: self.controller.show_frame("Settings")).pack(side=LEFT)
-        else:
-            ttk.Label(path_frame, text="Path not configured. Please set it in the Settings tab.").pack()
+        path_entry = ttk.Entry(settings_frame, textvariable=self.unity_project_path_var, state="readonly")
+        path_entry.grid(row=1, column=0, sticky='ew')
+        
+        browse_button = ttk.Button(settings_frame, text="Browse...", command=self.browse_for_unity_project, bootstyle="outline")
+        browse_button.grid(row=1, column=1, sticky='w', padx=(10, 0))
+        
+        settings_frame.grid_columnconfigure(0, weight=1) # Make the entry expand
 
-        # Add other extension functionality here...
-        ttk.Button(main_frame, text="Export Build (Example)", state="disabled").pack(pady=20)
-        ttk.Label(main_frame, text="(Functionality to be implemented)").pack()
+        # --- Action Area ---
+        action_frame = ttk.Labelframe(main_frame, text="Actions", padding=15)
+        action_frame.pack(fill=X, pady=20)
+        
+        ttk.Button(action_frame, text="Export Build (Example)", state="disabled").pack()
+        ttk.Label(action_frame, text="(Functionality to be implemented)").pack()
 
+    def browse_for_unity_project(self):
+        """Opens a dialog to select the Unity project folder and saves the setting."""
+        folder_path = filedialog.askdirectory(title="Select your Unity Project Folder")
+        if folder_path:
+            self.unity_project_path_var.set(folder_path)
+            # --- Save the setting using the new API ---
+            self.controller.save_extension_setting(
+                extension_name=self.extension_name,
+                setting_key='unity_project_path',
+                value=folder_path
+            )
 
-# 2. Define the main Extension class that the app will discover
 class SMXExtension:
-    """
-    This is the main entry point for the extension.
-    The main application will create an instance of this class.
-    """
+    """This is the main entry point for the extension."""
     def __init__(self):
-        # These attributes are used by the main app to identify the extension
         self.name = "SMX CMM Unity Export"
         self.description = "Helps export builds from Unity directly to the mod manager."
-        self.version = "1.0.0"
+        self.version = "1.0.1" # Bump version for the change
 
     def initialize(self, app):
-        """
-        This method is called by the main application to let the extension
-        integrate itself.
-        
-        :param app: The instance of the main App class.
-        """
+        """Called by the main application to let the extension integrate itself."""
         print(f"INFO: Initializing extension '{self.name}' v{self.version}")
         self.app = app
 
-        # --- Integration Step 1: Register Settings ---
-        # The category name should be unique, using self.name is a good idea.
-        self.app.register_setting(
-            category=self.name,
-            name="Unity Project Path",
-            default_value="",
-            setting_type='folder' # This lets us re-use the existing file browser logic
-        )
+        # --- REMOVED: Settings are no longer registered here ---
 
-        # --- Integration Step 2: Add the UI Tab ---
-        # The app needs a way to add our new frame as a tab.
+        # --- Integration Step: Add the UI Tab ---
         self.app.add_extension_tab(self.name, CMMUnityExportFrame)
 
     def on_close(self):
-        """
-        Called when the main application is closing.
-        Good for any cleanup operations.
-        """
+        """Called when the main application is closing."""
         print(f"INFO: Closing extension '{self.name}'.")
         pass

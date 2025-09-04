@@ -34,6 +34,7 @@ from src.github_handler import GitHubHandler
 # --- Global Constants ---
 CONFIG_FILE = "config.json"
 MAPPINGS_FILE = "mod_mappings.json"
+EXTENSIONS_SETTINGS_FILE = "extensions_settings.json" 
 APP_VERSION = "7.18.0" # Version updated to reflect new features
 
 # THIS FUNCTION is now part of the App class below. It has been moved.
@@ -49,7 +50,6 @@ def get_resource_path(filename):
 
 # --- Splash Screen Class ---
 class SplashScreen:
-    # ... (This class is unchanged)
     def __init__(self, parent):
         self.parent = parent
         self.splash = tk.Toplevel(parent)
@@ -112,8 +112,10 @@ class App(ttk.Window):
         self.setting_vars = {}
         self.saved_config = {}
         self.mod_mappings = {}
+        self.extension_settings = {}
         self.load_config()
         self.load_mappings()
+        self._load_extension_settings()
         self.is_mods_folder_known_to_exist = self.saved_config.get("mods_folder_exists", False)
 
         self.register_setting("Game Configuration", "Game Package Name", "com.Evag.SMX")
@@ -236,6 +238,46 @@ class App(ttk.Window):
         self.frames[name] = frame
         frame.grid(row=0, column=0, sticky="nsew")
         print(f"  -> Extension '{name}' successfully added a UI tab.")
+
+    # --- NEW METHODS: API for extensions to manage their settings ---
+
+    def _load_extension_settings(self):
+        """Loads the settings for all extensions from a dedicated JSON file."""
+        try:
+            with open(EXTENSIONS_SETTINGS_FILE, 'r') as f:
+                self.extension_settings = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.extension_settings = {}
+
+    def get_extension_setting(self, extension_name, setting_key, default=None):
+        """
+        Allows an extension to retrieve one of its saved settings.
+        
+        :param extension_name: The unique name of the extension (e.g., 'SMX CMM Unity Export').
+        :param setting_key: The name of the setting to retrieve (e.g., 'unity_project_path').
+        :param default: The value to return if the setting is not found.
+        :return: The stored value or the default.
+        """
+        return self.extension_settings.get(extension_name, {}).get(setting_key, default)
+
+    def save_extension_setting(self, extension_name, setting_key, value):
+        """
+        Allows an extension to save a setting. The settings are saved to disk immediately.
+        
+        :param extension_name: The unique name of the extension.
+        :param setting_key: The name of the setting to save.
+        :param value: The value to store.
+        """
+        if extension_name not in self.extension_settings:
+            self.extension_settings[extension_name] = {}
+        
+        self.extension_settings[extension_name][setting_key] = value
+        
+        # Save immediately to ensure data persistence
+        with open(EXTENSIONS_SETTINGS_FILE, 'w') as f:
+            json.dump(self.extension_settings, f, indent=4)
+        
+        print(f"INFO: Setting '{setting_key}' for extension '{extension_name}' saved.")
 
     def _migrate_library_config(self):
         lib_setting = self.setting_vars.get("LocalLibrary", {}).get("Paths")
@@ -577,6 +619,16 @@ class App(ttk.Window):
         if self.frames["Mod Manager"].source_folder_path.get():
             self.frames["Mod Manager"].source_folder_path.set("")
             self.log_to_ui("Selection cleared.")
+
+    def restart_app(self):
+        """Restarts the current application."""
+        print("INFO: Application restart requested.")
+        self.on_closing() # Perform normal cleanup
+        
+        # Relaunch the application
+        # sys.executable is the path to the python interpreter or the frozen .exe
+        # sys.argv[0] is the path to the script that was originally run
+        os.execv(sys.executable, ['python'] + [sys.argv[0]])
 
 if __name__ == "__main__":
     if sys.platform == "win32":
