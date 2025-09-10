@@ -282,7 +282,9 @@ class ModManagerFrame(ttk.Frame):
         for lib_name in all_libraries:
             lib_type = type_map.get(lib_name, '???')
             btn_text = f"[{lib_type}] {lib_name}"
-            style = "primary" if lib_name == self.selected_library.get() else "secondary"
+            # --- THE FIX IS HERE ---
+            # Changed the inactive style from "secondary" to "secondary-outline"
+            style = "primary" if lib_name == self.selected_library.get() else "secondary-outline"
             btn = ttk.Button(lib_frame, text=btn_text, bootstyle=style,
                             command=lambda l=lib_name: self.on_library_select(l))
             btn.pack(side='left', padx=(0,2))
