@@ -438,6 +438,36 @@ class App(ttk.Window):
         finally:
             self.after(100, self.hide_loading_overlay)
 
+    def _update_ui_after_mod_operation(self, local_paths, new_status):
+        """
+        Updates the internal data and redraws ONLY the UI for specific mods after an operation.
+        This avoids a full rescan and scroll reset.
+        """
+        # 1. Update the underlying data model (this is important)
+        for path in local_paths:
+            mod_found = False
+            for lib, cats in self.data_manager.local_data.items():
+                for cat, mods in cats.items():
+                    for mod in mods:
+                        if mod['full_path'] == path:
+                            mod['status'] = new_status
+                            mod_found = True
+                            break
+                    if mod_found: break
+                if mod_found: break
+
+        # 2. Find and update the specific widgets in the UI
+        mod_manager_frame = self.frames["Mod Manager"]
+        mod_list_view = mod_manager_frame.local_mods_frame
+        
+        for widget in mod_list_view.scrollable_frame.winfo_children():
+            if hasattr(widget, 'mod_data') and widget.mod_data.get('full_path') in local_paths:
+                # Tell the specific widget to update its status and buttons
+                widget.update_ui_for_status(new_status)
+        
+        # 3. Ensure the state of the newly created buttons is correct (enabled/disabled)
+        mod_manager_frame.update_control_state()
+
     def install_mods(self, local_paths, library, category):
         if not self.is_adb_connected or not self.is_mods_folder_known_to_exist:
             messagebox.showerror("Cannot Install", "Emulator not connected or game mods folder not found. Please connect and run the game once.")
@@ -445,6 +475,7 @@ class App(ttk.Window):
             
         target_dir = self.full_mods_path_var.get()
         log_func = self.log_to_ui
+        successful_paths = []
         for path in local_paths:
             mod_name = os.path.basename(path)
             try:
@@ -466,9 +497,12 @@ class App(ttk.Window):
                     self.mod_mappings[path] = {'index': next_index, 'device_folder': new_device_folder, 'library': library, 'category': category}
                 self.save_mappings()
                 log_func(f"SUCCESS: '{mod_name}' processed.")
+                successful_paths.append(path)
             except Exception as e:
                 log_func(f"--- FAILED for '{mod_name}' ---: {e}")
-        self.after(0, self.refresh_data_and_ui)
+        
+        if successful_paths:
+            self.after(0, self._update_ui_after_mod_operation, successful_paths, "Installed")
 
     def uninstall_mods(self, local_paths):
         if not self.is_adb_connected or not self.is_mods_folder_known_to_exist:
@@ -477,6 +511,7 @@ class App(ttk.Window):
 
         target_dir = self.full_mods_path_var.get()
         log_func = self.log_to_ui
+        successful_paths = []
         for path in local_paths:
             if path in self.mod_mappings:
                 mapping = self.mod_mappings[path]
@@ -487,9 +522,12 @@ class App(ttk.Window):
                     del self.mod_mappings[path]
                     self.save_mappings()
                     log_func("SUCCESS! Mod uninstalled and unlinked.")
+                    successful_paths.append(path)
                 except Exception as e:
                     log_func(f"--- UNINSTALL FAILED ---: {e}")
-        self.after(0, self.refresh_data_and_ui)
+        
+        if successful_paths:
+            self.after(0, self._update_ui_after_mod_operation, successful_paths, "Not Installed")
 
     def launch_game(self):
         if self.is_adb_connected and not self.is_game_running:

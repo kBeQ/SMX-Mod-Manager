@@ -20,10 +20,46 @@ class ModDisplayItem(ttk.Frame):
         self.install_button = None
         self.uninstall_button = None
         self.update_button = None
+        self.details_frame = None
         self.suit_images = {} # To prevent garbage collection
         self.images_loaded = False # NEW: Lazy loading flag
 
         self.build_ui_placeholders()
+
+    def update_ui_for_status(self, new_status):
+        """Updates the mod's status and redraws the buttons without rebuilding the whole widget."""
+        self.mod_data['status'] = new_status
+        
+        # Clear out the old buttons
+        if self.details_frame:
+            for widget in self.details_frame.winfo_children():
+                widget.destroy()
+            # Rebuild the buttons and labels within the same frame
+            self._build_details_frame_content()
+
+    def _build_details_frame_content(self):
+        """Builds or rebuilds the content of the details frame (buttons, file count, etc.)."""
+        # Reset button references so they can be garbage collected if they exist
+        self.install_button = None
+        self.uninstall_button = None
+        self.update_button = None
+
+        if self.view_mode == 'local':
+            ttk.Label(self.details_frame, text=f"Files: {self.mod_data.get('file_count', 'N/A')}", font=("Helvetica", 9), bootstyle="inverse-dark").pack(side='left', padx=(0,10))
+            if self.mod_data['status'] == 'Installed':
+                self.update_button = ttk.Button(self.details_frame, text="Update", bootstyle="success-outline", command=lambda p=self.mod_data['full_path']: self.controller.frames["Mod Manager"].on_install_single(p))
+                self.update_button.pack(side='left', padx=(0, 5))
+                self.uninstall_button = ttk.Button(self.details_frame, text="Uninstall", bootstyle="danger-outline", command=lambda p=self.mod_data['full_path']: self.controller.frames["Mod Manager"].on_uninstall_single(p))
+                self.uninstall_button.pack(side='left', padx=(0, 10))
+            else:
+                self.install_button = ttk.Button(self.details_frame, text="Install", bootstyle="success-outline", command=lambda p=self.mod_data['full_path']: self.controller.frames["Mod Manager"].on_install_single(p))
+                self.install_button.pack(side='left', padx=(0, 10))
+            ttk.Button(self.details_frame, text="Open Folder", bootstyle="secondary-outline", command=lambda p=self.mod_data['full_path']: self.open_folder_in_explorer(p)).pack(side='left')
+        
+        elif self.view_mode == 'unmanaged':
+            ttk.Label(self.details_frame, text=f"Device Folder: '{self.mod_data['device_folder']}'", font=("Helvetica", 8), bootstyle="inverse-dark", wraplength=150).pack(side='left')
+            mod_type_text = self.mod_data.get('mod_type', 'Unknown')
+            ttk.Label(self.details_frame, text=f"Type: {mod_type_text}", font=("Helvetica", 8, "italic"), bootstyle="inverse-dark").pack(side='right', padx=(0,5))
 
     def build_ui_placeholders(self):
         """Builds the widget structure with placeholder images."""
@@ -110,25 +146,13 @@ class ModDisplayItem(ttk.Frame):
         if self.view_mode == 'unmanaged':
             ttk.Label(name_frame, text="[Unmanaged]", font=("Helvetica", 8, "bold"), bootstyle="warning").pack(side='left', padx=5)
         
-        details_frame = ttk.Frame(self.content_frame, bootstyle="dark")
-        details_frame.grid(row=3, column=0, columnspan=2, sticky="ew", padx=8, pady=(0, 8))
-
-        if self.view_mode == 'local':
-            ttk.Label(details_frame, text=f"Files: {self.mod_data.get('file_count', 'N/A')}", font=("Helvetica", 9), bootstyle="inverse-dark").pack(side='left', padx=(0,10))
-            if self.mod_data['status'] == 'Installed':
-                self.update_button = ttk.Button(details_frame, text="Update", bootstyle="success-outline", command=lambda p=self.mod_data['full_path']: self.controller.frames["Mod Manager"].on_install_single(p))
-                self.update_button.pack(side='left', padx=(0, 5))
-                self.uninstall_button = ttk.Button(details_frame, text="Uninstall", bootstyle="danger-outline", command=lambda p=self.mod_data['full_path']: self.controller.frames["Mod Manager"].on_uninstall_single(p))
-                self.uninstall_button.pack(side='left', padx=(0, 10))
-            else:
-                self.install_button = ttk.Button(details_frame, text="Install", bootstyle="success-outline", command=lambda p=self.mod_data['full_path']: self.controller.frames["Mod Manager"].on_install_single(p))
-                self.install_button.pack(side='left', padx=(0, 10))
-            ttk.Button(details_frame, text="Open Folder", bootstyle="secondary-outline", command=lambda p=self.mod_data['full_path']: self.open_folder_in_explorer(p)).pack(side='left')
+        # Create the frame that will hold the buttons and give it a reference
+        self.details_frame = ttk.Frame(self.content_frame, bootstyle="dark")
+        self.details_frame.grid(row=3, column=0, columnspan=2, sticky="ew", padx=8, pady=(0, 8))
         
-        elif self.view_mode == 'unmanaged':
-            ttk.Label(details_frame, text=f"Device Folder: '{self.mod_data['device_folder']}'", font=("Helvetica", 8), bootstyle="inverse-dark", wraplength=150).pack(side='left')
-            mod_type_text = self.mod_data.get('mod_type', 'Unknown')
-            ttk.Label(details_frame, text=f"Type: {mod_type_text}", font=("Helvetica", 8, "italic"), bootstyle="inverse-dark").pack(side='right', padx=(0,5))
+        # Call the helper to populate it for the first time
+        self._build_details_frame_content()
+
 
     def load_images(self):
         """Loads the actual images for the widget, replacing placeholders."""
