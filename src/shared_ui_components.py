@@ -54,7 +54,8 @@ class ModDisplayItem(ttk.Frame):
             else:
                 self.install_button = ttk.Button(self.details_frame, text="Install", bootstyle="success-outline", command=lambda p=self.mod_data['full_path']: self.controller.frames["Mod Manager"].on_install_single(p))
                 self.install_button.pack(side='left', padx=(0, 10))
-            ttk.Button(self.details_frame, text="Open Folder", bootstyle="secondary-outline", command=lambda p=self.mod_data['full_path']: self.open_folder_in_explorer(p)).pack(side='left')
+            # --- THE FIX IS HERE ---
+            # The old text-based "Open Folder" button has been removed from this section.
         
         elif self.view_mode == 'unmanaged':
             ttk.Label(self.details_frame, text=f"Device Folder: '{self.mod_data['device_folder']}'", font=("Helvetica", 8), bootstyle="inverse-dark", wraplength=150).pack(side='left')
@@ -63,19 +64,31 @@ class ModDisplayItem(ttk.Frame):
 
     def build_ui_placeholders(self):
         """Builds the widget structure with placeholder images."""
-        self.content_frame.grid_columnconfigure(0, weight=2)
-        self.content_frame.grid_columnconfigure(1, weight=1)
+        # --- THE FIX IS HERE: Configure columns for name (expanding) and button (fixed) ---
+        self.content_frame.grid_columnconfigure(0, weight=1)
+        self.content_frame.grid_columnconfigure(1, weight=0)
 
-        # --- Row 0: Name (MOVED UP) ---
+        # --- Row 0: Name and (new) Open Folder Button ---
         name_frame = ttk.Frame(self.content_frame, bootstyle="dark")
-        name_frame.grid(row=0, column=0, columnspan=2, sticky="ew", padx=8, pady=(5, 10))
+        name_frame.grid(row=0, column=0, sticky="ew", padx=8, pady=(5, 10))
         name_label = ttk.Label(name_frame, text=self.mod_data['name'], font=("Helvetica", 11, "bold"), wraplength=280, justify='left', bootstyle="inverse-dark")
         name_label.pack(side='left')
 
         if self.view_mode == 'unmanaged':
             ttk.Label(name_frame, text="[Unmanaged]", font=("Helvetica", 8, "bold"), bootstyle="warning").pack(side='left', padx=5)
+        
+        # --- THE FIX IS HERE: Add the new icon button for 'local' view mode ---
+        if self.view_mode == 'local':
+            open_folder_button = ttk.Button(
+                self.content_frame, 
+                text="📂", 
+                bootstyle="info-outline", 
+                width=2,
+                command=lambda p=self.mod_data['full_path']: self.open_folder_in_explorer(p)
+            )
+            open_folder_button.grid(row=0, column=1, sticky="ne", padx=(0, 5), pady=5)
 
-        # --- Row 1: Main Image Content (MOVED DOWN) ---
+        # --- Row 1: Main Image Content ---
         images_frame = ttk.Frame(self.content_frame, bootstyle="dark")
         images_frame.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
         images_frame.grid_columnconfigure(0, weight=2)
@@ -86,7 +99,7 @@ class ModDisplayItem(ttk.Frame):
         # --- Preview ---
         preview_box = self._create_image_box_placeholder(images_frame, "Preview", (180, 101))
         preview_box.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
-        self.preview_image_label = preview_box.image_widget # Get the actual image label
+        self.preview_image_label = preview_box.image_widget
 
         # --- DYNAMIC UI: Icon or File Status ---
         mod_type = self.mod_data.get('library_type') or self.mod_data.get('mod_type')
@@ -110,48 +123,43 @@ class ModDisplayItem(ttk.Frame):
                 ttk.Label(sound_status_frame, text=sound_file, bootstyle=style, font=("Consolas", 9)).pack(anchor='w')
 
         elif mod_type == 'Suits':
-            # --- Right side of top row: Icon placeholder ---
             self.icon_frame = ttk.Frame(images_frame, bootstyle="dark")
             self.icon_frame.grid(row=0, column=1, sticky="nsew")
             placeholder_icon = self._get_image_for_display(None, (80, 80), "...")
             self.suit_icon_label = ttk.Label(self.icon_frame, image=placeholder_icon, bootstyle="dark")
-            self.suit_icon_label.image = placeholder_icon # Keep ref
+            self.suit_icon_label.image = placeholder_icon
             self.suit_icon_label.pack()
             self.suit_icon_filename_label = ttk.Label(self.icon_frame, text="icon.jpg", font=("Helvetica", 8), bootstyle="secondary")
             self.suit_icon_filename_label.pack()
             
-            # --- Row 2 (Suits Only): Gear Textures placeholders (MOVED DOWN) ---
             gear_frame = ttk.Frame(self.content_frame, bootstyle="dark", padding=(0, 5))
             gear_frame.grid(row=2, column=0, columnspan=2, sticky="ew")
             gear_frame.grid_columnconfigure(0, weight=1)
             gear_frame.grid_columnconfigure(1, weight=1)
 
-            # --- Helper to create a single gear row placeholder ---
             def create_placeholder_gear_row(parent, text, size):
                 row_frame = ttk.Frame(parent, bootstyle="dark")
                 img = self._get_image_for_display(None, size, "...")
                 image_label = ttk.Label(row_frame, image=img, bootstyle="dark")
-                image_label.image = img # Keep ref
+                image_label.image = img
                 image_label.pack(side='left', padx=(0, 5))
                 filename_label = ttk.Label(row_frame, text=text, font=("Helvetica", 8), bootstyle="secondary")
                 filename_label.pack(side='left', anchor='w')
                 return row_frame, image_label, filename_label
 
-            # --- Create and place the two gear rows ---
             gear_suit_widget, self.gear_suit_label, self.gear_suit_filename_label = create_placeholder_gear_row(gear_frame, 'gear_suit.png', (40, 40))
             gear_suit_widget.grid(row=0, column=0, sticky='w')
             
             gear_normal_widget, self.gear_normal_label, self.gear_normal_filename_label = create_placeholder_gear_row(gear_frame, 'gear_suit_normal.png', (40, 40))
             gear_normal_widget.grid(row=0, column=1, sticky='w')
             
-            details_row = 3 # Increment for suits
+            details_row = 3
 
         else:
             icon_box = self._create_image_box_placeholder(images_frame, "Icon", (90, 90))
             icon_box.grid(row=0, column=1, sticky="nsew")
             self.icon_image_label = icon_box.image_widget
 
-        # --- Final Row: Details Frame ---
         self.details_frame = ttk.Frame(self.content_frame, bootstyle="dark")
         self.details_frame.grid(row=details_row, column=0, columnspan=2, sticky="ew", padx=8, pady=(0, 8))
         
@@ -163,7 +171,6 @@ class ModDisplayItem(ttk.Frame):
         if self.images_loaded:
             return
         
-        # --- Load Preview ---
         preview_path = self.mod_data.get('preview_path')
         preview_img_obj = self._get_image_for_display(preview_path, (180, 101), "No Preview")
         self.preview_image_label.config(image=preview_img_obj)
@@ -173,21 +180,18 @@ class ModDisplayItem(ttk.Frame):
         if mod_type == 'Suits':
             suit_files = self.mod_data.get('suit_files', {})
             
-            # --- Icon ---
             icon_path = suit_files.get('icon')
             icon_img = self._get_image_for_display(icon_path, (80, 80), "N/A")
             self.suit_images['icon'] = icon_img
             self.suit_icon_label.config(image=icon_img)
             self.suit_icon_filename_label.config(bootstyle="success" if icon_path else "danger")
 
-            # --- Gear Suit ---
             gear_path = suit_files.get('gear')
             gear_img = self._get_image_for_display(gear_path, (40, 40), "N/A")
             self.suit_images['gear'] = gear_img
             self.gear_suit_label.config(image=gear_img)
             self.gear_suit_filename_label.config(bootstyle="success" if gear_path else "danger")
 
-            # --- Gear Normal ---
             normal_path = suit_files.get('normal')
             normal_img = self._get_image_for_display(normal_path, (40, 40), "N/A")
             self.suit_images['normal'] = normal_img
@@ -209,14 +213,11 @@ class ModDisplayItem(ttk.Frame):
         box_frame.config(width=size[0] + 10, height=size[1] + 10)
         
         image_label = ttk.Label(box_frame, bootstyle="darker")
-        box_frame.image_widget = image_label # Store a reliable reference
-
+        box_frame.image_widget = image_label
         img_obj = self._get_image_for_display(None, size, "...")
         image_label.config(image=img_obj)
         image_label.image = img_obj
         image_label.pack(padx=5, pady=5)
-        # --- THE FIX IS HERE ---
-        # The following line that created the "(Preview)" label has been removed.
         return box_frame
 
     def _get_image_for_display(self, path, size, placeholder_text):
@@ -249,7 +250,7 @@ class ModListView(ttk.Frame):
         self.max_columns = 2
 
         self.canvas = tk.Canvas(self, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(self, orient="vertical", command=self._on_scroll, bootstyle="round") # MODIFIED
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=self._on_scroll, bootstyle="round")
         self.scrollable_frame = ttk.Frame(self.canvas)
 
         self.scrollable_frame.bind("<Configure>", self._on_frame_configure)
@@ -272,7 +273,7 @@ class ModListView(ttk.Frame):
         if new_max_columns != self.max_columns:
             self.max_columns = new_max_columns
             self.redraw_grid()
-        self.after(50, self._lazy_load_visible_widgets) # NEW: Check on resize
+        self.after(50, self._lazy_load_visible_widgets)
 
     def _on_frame_configure(self, event=None):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -293,12 +294,10 @@ class ModListView(ttk.Frame):
             return photo
         except Exception: return None
 
-    # NEW: Handle scrollbar movement
     def _on_scroll(self, *args):
         self.canvas.yview(*args)
         self.after(50, self._lazy_load_visible_widgets)
 
-    # MODIFIED: Handle mouse wheel
     def _on_mousewheel(self, event):
         self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
         self.after(50, self._lazy_load_visible_widgets)
@@ -373,9 +372,8 @@ class ModListView(ttk.Frame):
         
         self.redraw_grid()
         self.update_idletasks()
-        self.after(10, self._lazy_load_visible_widgets) # NEW: Initial load
+        self.after(10, self._lazy_load_visible_widgets)
 
-    # NEW: Core lazy loading logic
     def _lazy_load_visible_widgets(self):
         if not self.winfo_viewable():
             return
@@ -391,7 +389,6 @@ class ModListView(ttk.Frame):
                     if y < visible_bottom and (y + height) > visible_top:
                         widget.load_images()
         except tk.TclError:
-            # This can happen if the window is being destroyed, it's safe to ignore.
             pass
 
     def create_mod_widget(self, mod_data, view_mode):
