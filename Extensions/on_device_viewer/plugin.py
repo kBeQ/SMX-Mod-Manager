@@ -1,12 +1,14 @@
-# --- Filename: on_device_ui.py ---
+# --- Filename: Extensions/on_device_viewer/plugin.py ---
 import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import messagebox, font
+# The shared component is still in 'src', so we adjust the import path
 from src.shared_ui_components import ModListView
 
+# --- This is the original OnDeviceFrame class, moved here from on_device_ui.py ---
 class OnDeviceFrame(ttk.Frame):
-    name = "On Device"
+    name = "On Device" # The name property is still used for the frame's internal reference
     def __init__(self, parent, controller):
         super().__init__(parent, padding=15)
         self.controller = controller
@@ -18,25 +20,21 @@ class OnDeviceFrame(ttk.Frame):
         unmanaged_frame_container = ttk.Labelframe(self, text="On Device (Unmanaged Mods)", padding=15)
         unmanaged_frame_container.pack(expand=True, fill='both')
         
-        # --- Header with Scan/Delete and Filters ---
         header_area = ttk.Frame(unmanaged_frame_container)
         header_area.pack(fill='x', pady=(0, 10))
 
-        # Left side controls
         left_controls = ttk.Frame(header_area)
         left_controls.pack(side='left')
         self.scan_button = ttk.Button(left_controls, text="Scan Device", bootstyle="primary", 
                    command=self.controller.refresh_data_and_ui)
         self.scan_button.pack()
         
-        # Right side controls
         right_controls = ttk.Frame(header_area)
         right_controls.pack(side='right')
         self.delete_button = ttk.Button(right_controls, text="Delete Selected", bootstyle="danger", 
                    command=self.on_delete_unmanaged_selected)
         self.delete_button.pack()
 
-        # Center filter controls
         filter_frame = ttk.Frame(header_area)
         filter_frame.pack(side='top', pady=(0, 10))
         
@@ -50,16 +48,14 @@ class OnDeviceFrame(ttk.Frame):
         self.unmanaged_mods_frame = ModListView(unmanaged_frame_container, controller, view_type='unmanaged')
         self.unmanaged_mods_frame.pack(expand=True, fill='both', padx=5, pady=(0,5))
         
-        self.set_filter("All") # Set initial filter state
+        self.set_filter("All")
         self.update_mod_list()
 
     def set_filter(self, category):
         self.active_filter = category
         for cat, btn in self.filter_buttons.items():
-            if cat == category:
-                btn.config(bootstyle="info")
-            else:
-                btn.config(bootstyle="secondary-outline")
+            style = "info" if cat == category else "secondary-outline"
+            btn.config(bootstyle=style)
         self.update_mod_list()
 
     def update_control_state(self):
@@ -113,3 +109,23 @@ class OnDeviceFrame(ttk.Frame):
             except Exception as e:
                 log_func(f"--- DELETE FAILED for '{folder}' ---: {e}")
         self.controller.after(0, self.controller.refresh_data_and_ui)
+
+
+# --- This is the required entry point for the extension system ---
+class SMXExtension:
+    def __init__(self):
+        self.name = "On Device" # This name will appear on the tab button
+        self.description = "A core utility to view and manage unmanaged mods on the device."
+        self.version = "1.0.0"
+
+    def initialize(self, app):
+        """Called by the main application to let the extension integrate itself."""
+        print(f"INFO: Initializing extension '{self.name}' v{self.version}")
+        self.app = app
+        # This one line adds the entire feature back to the UI
+        self.app.add_extension_tab(self.name, OnDeviceFrame)
+
+    def on_close(self):
+        """Called when the main application is closing."""
+        print(f"INFO: Closing extension '{self.name}'.")
+        pass
