@@ -12,8 +12,8 @@
 
 A powerful, user-friendly desktop application for organizing, installing, and managing mods for SMX on the Google Play Games on PC emulator.
 
-This tool is specifically designed for **SMX: Supermoto Vs. Motocross v7.17.13**.
-
+This tool is specifically designed for **SMX: Supermoto Vs. Motocross v8.0.2**.
+First version of the tool designed for *SMX: Supermoto Vs. Motocross v7.17.13*.
 ---
 
 
