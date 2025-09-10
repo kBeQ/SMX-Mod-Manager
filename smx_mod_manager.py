@@ -34,7 +34,7 @@ from src.github_handler import GitHubHandler
 CONFIG_FILE = "config.json"
 MAPPINGS_FILE = "mod_mappings.json"
 EXTENSIONS_SETTINGS_FILE = "extensions_settings.json" 
-APP_VERSION = "7.18.0" # Version updated to reflect new features
+APP_VERSION = "8.0.0" # Version updated to reflect new features
 
 # THIS FUNCTION is now part of the App class below. It has been moved.
 
