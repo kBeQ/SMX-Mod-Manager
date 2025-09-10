@@ -20,7 +20,6 @@ from pathlib import Path
 
 # Import other modules...
 from src.mod_manager_ui import ModManagerFrame
-from src.mod_helper_ui import ModHelperFrame
 from src.settings_ui import SettingsFrame
 from src.adb_handler import AdbHandler
 from src.data_manager import DataManager
@@ -149,7 +148,7 @@ class App(ttk.Window):
         self.nav_frame.pack(side="top", fill="x", padx=1, pady=1)
         self.nav_buttons = {}
         
-        self.core_frames = ["Mod Manager", "Extensions", "Mod Helper", "Settings"]
+        self.core_frames = ["Mod Manager", "Extensions", "Settings"]
         for name in self.core_frames:
             button = ttk.Button(self.nav_frame, text=name, command=lambda n=name: self.show_frame(n), bootstyle="secondary", padding=(0, 10))
             button.pack(side="left", fill="x", expand=True, padx=(0,1))
@@ -161,7 +160,7 @@ class App(ttk.Window):
         self.container.grid_columnconfigure(0, weight=1)
         self.frames = {}
         
-        for F in (ModManagerFrame, ExtensionsFrame, ModHelperFrame, SettingsFrame):
+        for F in (ModManagerFrame, ExtensionsFrame, SettingsFrame):
             frame = F(self.container, self)
             self.frames[F.name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
