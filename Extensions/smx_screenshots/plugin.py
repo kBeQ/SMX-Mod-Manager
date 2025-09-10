@@ -95,7 +95,9 @@ class ScreenshotsFrame(ttk.Frame):
                 img.thumbnail((100, 100))
                 thumb = ImageTk.PhotoImage(img)
                 
-                item_id = self.tree.insert('', 'end', image=thumb, values=(item_data['name'],))
+                # --- THE FIX IS HERE ---
+                # Added `text=""` to explicitly set the first column's text to nothing.
+                item_id = self.tree.insert('', 'end', text="", image=thumb, values=(item_data['name'],))
                 self.thumbnails[item_id] = thumb # Keep reference
                 self.screenshots[item_id] = item_data['name'] # Store original name
             except Exception as e:
