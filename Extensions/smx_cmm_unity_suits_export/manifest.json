@@ -2,5 +2,5 @@
   "name": "SMX CMM Unity Suits Export",
   "version": "1.1.0",
   "description": "Scans a Unity project folder for zipped suit mods and exports them to your library.",
-  "author": "kbeq"
+  "author": "kBeQ"
 }
