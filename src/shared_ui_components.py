@@ -66,10 +66,22 @@ class ModDisplayItem(ttk.Frame):
         self.content_frame.grid_columnconfigure(0, weight=2)
         self.content_frame.grid_columnconfigure(1, weight=1)
 
+        # --- Row 0: Name (MOVED UP) ---
+        name_frame = ttk.Frame(self.content_frame, bootstyle="dark")
+        name_frame.grid(row=0, column=0, columnspan=2, sticky="ew", padx=8, pady=(5, 10))
+        name_label = ttk.Label(name_frame, text=self.mod_data['name'], font=("Helvetica", 11, "bold"), wraplength=280, justify='left', bootstyle="inverse-dark")
+        name_label.pack(side='left')
+
+        if self.view_mode == 'unmanaged':
+            ttk.Label(name_frame, text="[Unmanaged]", font=("Helvetica", 8, "bold"), bootstyle="warning").pack(side='left', padx=5)
+
+        # --- Row 1: Main Image Content (MOVED DOWN) ---
         images_frame = ttk.Frame(self.content_frame, bootstyle="dark")
-        images_frame.grid(row=0, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
+        images_frame.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
         images_frame.grid_columnconfigure(0, weight=2)
         images_frame.grid_columnconfigure(1, weight=1)
+        
+        details_row = 2 # Default row for the details/buttons frame
         
         # --- Preview ---
         preview_box = self._create_image_box_placeholder(images_frame, "Preview", (180, 101))
@@ -108,9 +120,9 @@ class ModDisplayItem(ttk.Frame):
             self.suit_icon_filename_label = ttk.Label(self.icon_frame, text="icon.jpg", font=("Helvetica", 8), bootstyle="secondary")
             self.suit_icon_filename_label.pack()
             
-            # --- Middle Row: Gear Textures placeholders ---
+            # --- Row 2 (Suits Only): Gear Textures placeholders (MOVED DOWN) ---
             gear_frame = ttk.Frame(self.content_frame, bootstyle="dark", padding=(0, 5))
-            gear_frame.grid(row=1, column=0, columnspan=2, sticky="ew")
+            gear_frame.grid(row=2, column=0, columnspan=2, sticky="ew")
             gear_frame.grid_columnconfigure(0, weight=1)
             gear_frame.grid_columnconfigure(1, weight=1)
 
@@ -131,26 +143,18 @@ class ModDisplayItem(ttk.Frame):
             
             gear_normal_widget, self.gear_normal_label, self.gear_normal_filename_label = create_placeholder_gear_row(gear_frame, 'gear_suit_normal.png', (40, 40))
             gear_normal_widget.grid(row=0, column=1, sticky='w')
+            
+            details_row = 3 # Increment for suits
 
         else:
             icon_box = self._create_image_box_placeholder(images_frame, "Icon", (90, 90))
             icon_box.grid(row=0, column=1, sticky="nsew")
             self.icon_image_label = icon_box.image_widget
 
-        # --- Common Details Below ---
-        name_frame = ttk.Frame(self.content_frame, bootstyle="dark")
-        name_frame.grid(row=2, column=0, columnspan=2, sticky="ew", padx=8, pady=(5, 5))
-        name_label = ttk.Label(name_frame, text=self.mod_data['name'], font=("Helvetica", 11, "bold"), wraplength=280, justify='left', bootstyle="inverse-dark")
-        name_label.pack(side='left')
-
-        if self.view_mode == 'unmanaged':
-            ttk.Label(name_frame, text="[Unmanaged]", font=("Helvetica", 8, "bold"), bootstyle="warning").pack(side='left', padx=5)
-        
-        # Create the frame that will hold the buttons and give it a reference
+        # --- Final Row: Details Frame ---
         self.details_frame = ttk.Frame(self.content_frame, bootstyle="dark")
-        self.details_frame.grid(row=3, column=0, columnspan=2, sticky="ew", padx=8, pady=(0, 8))
+        self.details_frame.grid(row=details_row, column=0, columnspan=2, sticky="ew", padx=8, pady=(0, 8))
         
-        # Call the helper to populate it for the first time
         self._build_details_frame_content()
 
 
@@ -202,7 +206,7 @@ class ModDisplayItem(ttk.Frame):
     def _create_image_box_placeholder(self, parent, label_text, size):
         box_frame = ttk.Frame(parent, bootstyle="darker")
         box_frame.pack_propagate(False)
-        box_frame.config(width=size[0] + 10, height=size[1] + 30)
+        box_frame.config(width=size[0] + 10, height=size[1] + 10)
         
         image_label = ttk.Label(box_frame, bootstyle="darker")
         box_frame.image_widget = image_label # Store a reliable reference
@@ -211,7 +215,8 @@ class ModDisplayItem(ttk.Frame):
         image_label.config(image=img_obj)
         image_label.image = img_obj
         image_label.pack(padx=5, pady=5)
-        ttk.Label(box_frame, text=f"({label_text})", font=("Helvetica", 7), wraplength=size[0], bootstyle="inverse-darker").pack(pady=(0,5), padx=2)
+        # --- THE FIX IS HERE ---
+        # The following line that created the "(Preview)" label has been removed.
         return box_frame
 
     def _get_image_for_display(self, path, size, placeholder_text):
