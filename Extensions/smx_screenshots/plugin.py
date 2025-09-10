@@ -3,147 +3,170 @@ import tkinter as tk
 from tkinter import messagebox
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
+from ttkbootstrap.scrolled import ScrolledFrame
 from pathlib import Path
 import os
 from PIL import Image, ImageTk
 
+class ScreenshotItem(ttk.Frame):
+    """A single widget representing a screenshot in the grid."""
+    def __init__(self, parent, controller, data):
+        super().__init__(parent, padding=5, bootstyle="dark")
+        self.controller = controller # This is the main ScreenshotsFrame
+        self.data = data
+        self.is_selected = False
+
+        self.grid_columnconfigure(0, weight=1)
+
+        # --- Name Label (at the top) ---
+        self.name_var = tk.StringVar(value=data['name'])
+        self.name_label = ttk.Label(self, textvariable=self.name_var, anchor=CENTER, bootstyle="inverse-dark")
+        self.name_label.grid(row=0, column=0, sticky='ew', pady=(0, 5))
+
+        # --- Image Label (below name) ---
+        img = Image.open(data['local_path'])
+        img.thumbnail((200, 200)) # Larger thumbnail size
+        self.photo = ImageTk.PhotoImage(img)
+        self.image_label = ttk.Label(self, image=self.photo, bootstyle="dark")
+        self.image_label.grid(row=1, column=0, sticky='nsew')
+        
+        # --- Bindings ---
+        self.bind_all_children("<Button-1>", self.on_click)
+        self.name_label.bind("<Double-1>", self.on_double_click_name)
+
+    def bind_all_children(self, event, callback):
+        self.bind(event, callback)
+        for child in self.winfo_children():
+            child.bind(event, callback)
+
+    def on_click(self, event):
+        ctrl_pressed = (event.state & 0x0004) != 0
+        self.controller.on_item_select(self, ctrl_pressed)
+
+    def on_double_click_name(self, event):
+        self.controller.start_rename(self)
+
+    def set_selected(self, selected):
+        self.is_selected = selected
+        style = "primary" if selected else "dark"
+        self.config(bootstyle=style)
+
+
 class ScreenshotsFrame(ttk.Frame):
     """The UI frame for the Screenshots extension."""
     name = "SMX Screenshots"
-    DEVICE_PATH = "/sdcard/Pictures/SMX/" # Standard path for Pictures on Android
+    DEVICE_PATH = "/sdcard/Pictures/SMX/"
 
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        self.screenshots = {}
-        self.thumbnails = {} # To prevent garbage collection
+        self.screenshot_widgets = []
+        self.max_columns = 4
 
         main_frame = ttk.Frame(self, padding=15)
         main_frame.pack(fill=BOTH, expand=True)
 
-        # --- Header ---
         header = ttk.Frame(main_frame)
         header.pack(fill=X, pady=(0, 10))
         self.refresh_button = ttk.Button(header, text="Refresh Screenshots", command=self.refresh_screenshots)
         self.refresh_button.pack(side=LEFT)
-        self.status_label = ttk.Label(header, text="  Click Refresh to scan for screenshots.")
+        self.status_label = ttk.Label(header, text="  Click Refresh to scan.")
         self.status_label.pack(side=LEFT)
 
-        # --- Treeview for displaying screenshots ---
-        tree_frame = ttk.Frame(main_frame)
-        tree_frame.pack(fill=BOTH, expand=True)
+        self.scroll_frame = ScrolledFrame(main_frame, autohide=True)
+        self.scroll_frame.pack(fill=BOTH, expand=True)
+        self.scroll_frame.bind("<Configure>", self.on_resize)
 
-        self.tree = ttk.Treeview(tree_frame, columns=('filename',), show='tree headings', selectmode='extended')
-        self.tree.heading('#0', text='Preview')
-        self.tree.heading('filename', text='Filename')
-        self.tree.column('#0', width=120, stretch=False)
-        self.tree.column('filename', width=400, stretch=True)
-
-        scrollbar = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar.set)
-        
-        self.tree.pack(side=LEFT, fill=BOTH, expand=True)
-        scrollbar.pack(side=RIGHT, fill=Y)
-
-        self.tree.bind("<Double-1>", self.on_double_click)
-
-        # --- Footer ---
         footer = ttk.Frame(main_frame)
         footer.pack(fill=X, pady=(10, 0))
         self.download_button = ttk.Button(footer, text="Download Selected to PC", command=self.download_selected, bootstyle="success")
         self.download_button.pack()
 
+    def on_resize(self, event):
+        new_max_columns = max(1, event.width // 220) # 220px is a good estimated width for each item
+        if new_max_columns != self.max_columns:
+            self.max_columns = new_max_columns
+            self.redraw_grid()
+
+    def redraw_grid(self):
+        for i, widget in enumerate(self.screenshot_widgets):
+            row = i // self.max_columns
+            col = i % self.max_columns
+            widget.grid(row=row, column=col, padx=5, pady=5, sticky='nsew')
+        
+        for i in range(self.max_columns):
+            self.scroll_frame.grid_columnconfigure(i, weight=1)
+
     def refresh_screenshots(self):
-        """Starts the process of scanning the device for screenshots."""
         if not self.controller.is_adb_connected:
-            messagebox.showwarning("Not Connected", "Please connect to the emulator before refreshing screenshots.")
+            messagebox.showwarning("Not Connected", "Please connect to the emulator first.")
             return
 
         self.status_label.config(text="  Scanning...")
-        self.tree.delete(*self.tree.get_children())
-        self.screenshots.clear()
-        self.thumbnails.clear()
+        for widget in self.screenshot_widgets:
+            widget.destroy()
+        self.screenshot_widgets.clear()
         self.controller.run_in_thread(self._threaded_scan)
 
     def _threaded_scan(self):
-        """Scans the device in a separate thread to not freeze the UI."""
         filenames = self.controller.adb.list_device_files(self.DEVICE_PATH)
         if filenames is None:
             self.controller.after(0, self.on_scan_complete, None)
             return
 
         screenshot_data = []
-        for fname in filenames:
+        for fname in sorted(filenames):
             if fname.lower().endswith(('.jpg', '.jpeg', '.png')):
-                device_file_path = f"{self.DEVICE_PATH}{fname}"
-                temp_local_path = os.path.join(self.controller.TEMP_ICON_DIR, f"ss_{fname}")
-                
-                if self.controller.adb.pull_file(device_file_path, temp_local_path):
-                    screenshot_data.append({'name': fname, 'local_path': temp_local_path})
+                device_path = f"{self.DEVICE_PATH}{fname}"
+                temp_path = os.path.join(self.controller.TEMP_ICON_DIR, f"ss_{fname}")
+                if self.controller.adb.pull_file(device_path, temp_path):
+                    screenshot_data.append({'name': fname, 'local_path': temp_path})
         
         self.controller.after(0, self.on_scan_complete, screenshot_data)
 
     def on_scan_complete(self, data):
-        """Populates the treeview once the scan is complete."""
         if data is None:
-            self.status_label.config(text="  Error scanning device. Is the folder accessible?")
+            self.status_label.config(text="  Error scanning device.")
             return
-        
+
         for item_data in data:
             try:
-                img = Image.open(item_data['local_path'])
-                img.thumbnail((100, 100))
-                thumb = ImageTk.PhotoImage(img)
-                
-                # --- THE FIX IS HERE ---
-                # Added `text=""` to explicitly set the first column's text to nothing.
-                item_id = self.tree.insert('', 'end', text="", image=thumb, values=(item_data['name'],))
-                self.thumbnails[item_id] = thumb # Keep reference
-                self.screenshots[item_id] = item_data['name'] # Store original name
+                widget = ScreenshotItem(self.scroll_frame, self, item_data)
+                self.screenshot_widgets.append(widget)
             except Exception as e:
-                print(f"Could not process screenshot {item_data['name']}: {e}")
+                print(f"Could not create widget for {item_data['name']}: {e}")
 
-        self.status_label.config(text=f"  Found {len(self.screenshots)} screenshot(s).")
+        self.redraw_grid()
+        self.status_label.config(text=f"  Found {len(self.screenshot_widgets)} screenshot(s).")
 
-    def on_double_click(self, event):
-        """Handles double-clicking on a filename to initiate renaming."""
-        region = self.tree.identify("region", event.x, event.y)
-        if region != "cell":
-            return
-
-        column = self.tree.identify_column(event.x)
-        if column != "#1": # Column '#1' is our 'filename' column
-            return
+    def on_item_select(self, widget, ctrl_pressed):
+        if not ctrl_pressed:
+            for w in self.screenshot_widgets:
+                if w != widget:
+                    w.set_selected(False)
         
-        selected_item = self.tree.focus()
-        if not selected_item:
-            return
+        widget.set_selected(not widget.is_selected)
 
-        # Get the position of the cell to place the entry widget
-        bbox = self.tree.bbox(selected_item, "filename")
-        if not bbox: return
+    def start_rename(self, widget):
+        entry = ttk.Entry(widget.name_label)
+        entry.place(relwidth=1.0, relheight=1.0)
         
-        entry = ttk.Entry(self.tree)
-        entry.place(x=bbox[0], y=bbox[1], width=bbox[2], height=bbox[3])
-        
-        current_name = self.tree.item(selected_item, "values")[0]
+        current_name = widget.name_var.get()
         entry.insert(0, current_name)
         entry.focus_force()
         entry.select_range(0, 'end')
 
-        entry.bind("<Return>", lambda e, item=selected_item, entry_widget=entry: self.finish_rename(item, entry_widget))
-        entry.bind("<FocusOut>", lambda e, item=selected_item, entry_widget=entry: self.finish_rename(item, entry_widget))
+        entry.bind("<Return>", lambda e, w=widget, entry_widget=entry: self.finish_rename(w, entry_widget))
+        entry.bind("<FocusOut>", lambda e, w=widget, entry_widget=entry: self.finish_rename(w, entry_widget))
 
-    def finish_rename(self, item_id, entry_widget):
-        """Executes the rename command on the device."""
+    def finish_rename(self, widget, entry_widget):
         new_name = entry_widget.get().strip()
-        entry_widget.destroy() # Always remove the entry widget
+        entry_widget.destroy()
 
-        old_name = self.screenshots.get(item_id)
+        old_name = widget.data['name']
         if not new_name or new_name == old_name:
-            return # No change, do nothing
+            return
 
-        # Simple validation
         if any(c in new_name for c in '/\\:*?"<>|'):
             messagebox.showerror("Invalid Name", "Filename contains invalid characters.")
             return
@@ -154,51 +177,38 @@ class ScreenshotsFrame(ttk.Frame):
         old_path = f"{self.DEVICE_PATH}{old_name}"
         new_path = f"{self.DEVICE_PATH}{new_name}"
         
-        # Use adb.send_adb_command to show output in the console
         self.controller.adb.send_adb_command(f"shell mv \"{old_path}\" \"{new_path}\"", log)
         
-        # Update UI
-        self.tree.item(item_id, values=(new_name,))
-        self.screenshots[item_id] = new_name
+        widget.data['name'] = new_name
+        widget.name_var.set(new_name)
         log("Rename complete.")
 
-
     def download_selected(self):
-        """Downloads selected screenshots to the PC's Downloads folder."""
-        selected_items = self.tree.selection()
-        if not selected_items:
-            messagebox.showinfo("No Selection", "Please select at least one screenshot to download.")
+        selected_widgets = [w for w in self.screenshot_widgets if w.is_selected]
+        if not selected_widgets:
+            messagebox.showinfo("No Selection", "Please select screenshots to download.")
             return
 
-        try:
-            downloads_path = Path.home() / "Downloads"
-            os.makedirs(downloads_path, exist_ok=True)
-        except Exception as e:
-            messagebox.showerror("Error", f"Could not access your Downloads folder: {e}")
-            return
+        downloads_path = Path.home() / "Downloads"
+        os.makedirs(downloads_path, exist_ok=True)
         
-        self.controller.show_loading_overlay(f"Downloading {len(selected_items)} file(s)...")
-        self.controller.run_in_thread(self._threaded_download, selected_items, downloads_path)
+        self.controller.show_loading_overlay(f"Downloading {len(selected_widgets)} file(s)...")
+        self.controller.run_in_thread(self._threaded_download, selected_widgets, downloads_path)
 
-    def _threaded_download(self, items, pc_path):
-        """Handles the file pulling in a background thread."""
+    def _threaded_download(self, widgets, pc_path):
         success_count = 0
-        for item_id in items:
-            filename = self.screenshots.get(item_id)
-            if not filename: continue
-            
+        for widget in widgets:
+            filename = widget.data['name']
             device_file = f"{self.DEVICE_PATH}{filename}"
-            local_file = os.path.join(pc_path, filename)
-
-            if self.controller.adb.pull_file(device_file, local_file):
+            local_file = pc_path / filename
+            if self.controller.adb.pull_file(device_file, str(local_file)):
                 success_count += 1
         
-        self.controller.after(0, self.on_download_complete, success_count, len(items), pc_path)
+        self.controller.after(0, self.on_download_complete, success_count, len(widgets), pc_path)
 
     def on_download_complete(self, success_count, total, pc_path):
-        """Shows a confirmation message after downloading."""
         self.controller.hide_loading_overlay()
-        messagebox.showinfo("Download Complete", f"Successfully downloaded {success_count} of {total} screenshot(s) to:\n\n{pc_path}")
+        messagebox.showinfo("Download Complete", f"Downloaded {success_count} of {total} to:\n\n{pc_path}")
 
 
 class SMXExtension:
@@ -206,7 +216,7 @@ class SMXExtension:
     def __init__(self):
         self.name = "SMX Screenshots"
         self.description = "Browse, rename, and download in-game screenshots from your device."
-        self.version = "1.0.0"
+        self.version = "1.1.0" # Version bumped for UI redesign
 
     def initialize(self, app):
         """Called by the main application to let the extension integrate itself."""
