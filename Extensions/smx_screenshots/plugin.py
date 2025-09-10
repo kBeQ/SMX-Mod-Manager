@@ -1,230 +1,177 @@
-# --- Filename: Extensions/smx_screenshots/plugin.py ---
+# --- Filename: src/extensions_ui.py ---
 import tkinter as tk
-from tkinter import messagebox
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.scrolled import ScrolledFrame
-from pathlib import Path
 import os
-from PIL import Image, ImageTk
+import json
 
-class ScreenshotItem(ttk.Frame):
-    """A single widget representing a screenshot in the grid."""
-    def __init__(self, parent, controller, data):
-        super().__init__(parent, padding=5, bootstyle="dark")
-        self.controller = controller # This is the main ScreenshotsFrame
-        self.data = data
-        self.is_selected = False
-
-        self.grid_columnconfigure(0, weight=1)
-
-        # --- Name Label (at the top) ---
-        self.name_var = tk.StringVar(value=data['name'])
-        self.name_label = ttk.Label(self, textvariable=self.name_var, anchor=CENTER, bootstyle="inverse-dark")
-        self.name_label.grid(row=0, column=0, sticky='ew', pady=(0, 5))
-
-        # --- Image Label (below name) ---
-        img = Image.open(data['local_path'])
-        img.thumbnail((200, 200)) # Larger thumbnail size
-        self.photo = ImageTk.PhotoImage(img)
-        self.image_label = ttk.Label(self, image=self.photo, bootstyle="dark")
-        self.image_label.grid(row=1, column=0, sticky='nsew')
-        
-        # --- Bindings ---
-        self.bind_all_children("<Button-1>", self.on_click)
-        self.name_label.bind("<Double-1>", self.on_double_click_name)
-
-    def bind_all_children(self, event, callback):
-        self.bind(event, callback)
-        for child in self.winfo_children():
-            child.bind(event, callback)
-
-    def on_click(self, event):
-        ctrl_pressed = (event.state & 0x0004) != 0
-        self.controller.on_item_select(self, ctrl_pressed)
-
-    def on_double_click_name(self, event):
-        self.controller.start_rename(self)
-
-    def set_selected(self, selected):
-        self.is_selected = selected
-        style = "primary" if selected else "dark"
-        self.config(bootstyle=style)
-
-
-class ScreenshotsFrame(ttk.Frame):
-    """The UI frame for the Screenshots extension."""
-    name = "SMX Screenshots"
-    DEVICE_PATH = "/sdcard/Pictures/SMX/"
+class ExtensionsFrame(ttk.Frame):
+    name = "Extensions"
 
     def __init__(self, parent, controller):
         super().__init__(parent)
-        self.controller = controller
-        self.screenshot_widgets = []
-        self.max_columns = 4
+        self.controller = controller # Main App instance
+        self.github_handler = controller.github_handler
+        self.available_extensions = {}
+        self.installed_extensions = {}
 
-        main_frame = ttk.Frame(self, padding=15)
-        main_frame.pack(fill=BOTH, expand=True)
+        # --- Restart Banner (initially hidden) ---
+        self.restart_banner = ttk.Frame(self, bootstyle="warning", padding=10)
+        ttk.Label(self.restart_banner, text="A restart is required to load/unload extension code.", bootstyle="inverse-warning").pack(side=LEFT, padx=(0, 10))
+        ttk.Button(self.restart_banner, text="Restart Now", command=self.controller.restart_app, bootstyle="danger").pack(side=LEFT)
+        # The banner will be packed into view by the show_restart_banner() method when needed.
 
-        header = ttk.Frame(main_frame)
-        header.pack(fill=X, pady=(0, 10))
-        self.refresh_button = ttk.Button(header, text="Refresh Screenshots", command=self.refresh_screenshots)
-        self.refresh_button.pack(side=LEFT)
-        self.status_label = ttk.Label(header, text="  Click Refresh to scan.")
-        self.status_label.pack(side=LEFT)
+        # --- Main Layout ---
+        self.main_pane = ttk.PanedWindow(self, orient=HORIZONTAL)
+        self.main_pane.pack(fill=BOTH, expand=True, padx=15, pady=15)
 
-        self.scroll_frame = ScrolledFrame(main_frame, autohide=True)
-        self.scroll_frame.pack(fill=BOTH, expand=True)
-        self.scroll_frame.bind("<Configure>", self.on_resize)
+        # --- Left Pane: Available Online ---
+        left_frame = ttk.Labelframe(self.main_pane, text="Available for Download", padding=10)
+        self.main_pane.add(left_frame, weight=1)
 
-        footer = ttk.Frame(main_frame)
-        footer.pack(fill=X, pady=(10, 0))
-        self.download_button = ttk.Button(footer, text="Download Selected to PC", command=self.download_selected, bootstyle="success")
-        self.download_button.pack()
+        header_frame = ttk.Frame(left_frame)
+        header_frame.pack(fill=X, pady=(0, 10))
+        ttk.Button(header_frame, text="Refresh List", command=self.refresh_online_list, bootstyle="info").pack(side=LEFT)
+        self.status_label = ttk.Label(header_frame, text="Click Refresh to check for extensions.")
+        self.status_label.pack(side=LEFT, padx=10)
 
-    def on_resize(self, event):
-        new_max_columns = max(1, event.width // 220) # 220px is a good estimated width for each item
-        if new_max_columns != self.max_columns:
-            self.max_columns = new_max_columns
-            self.redraw_grid()
+        self.online_list_frame = ScrolledFrame(left_frame, autohide=True)
+        self.online_list_frame.pack(fill=BOTH, expand=True)
 
-    def redraw_grid(self):
-        for i, widget in enumerate(self.screenshot_widgets):
-            row = i // self.max_columns
-            col = i % self.max_columns
-            widget.grid(row=row, column=col, padx=5, pady=5, sticky='nsew')
+        # --- Right Pane: Installed ---
+        right_frame = ttk.Labelframe(self.main_pane, text="Installed Locally", padding=10)
+        self.main_pane.add(right_frame, weight=1)
+        self.installed_list_frame = ScrolledFrame(right_frame, autohide=True)
+        self.installed_list_frame.pack(fill=BOTH, expand=True)
+
+        # Initial population of installed extensions
+        self.populate_installed_list()
+
+    def refresh_online_list(self):
+        self.status_label.config(text="Fetching from GitHub...")
+        self.controller.run_in_thread(self._threaded_fetch_online)
+
+    def _threaded_fetch_online(self):
+        self.available_extensions = self.github_handler.get_available_extensions()
+        self.controller.after(0, self.populate_online_list)
         
-        for i in range(self.max_columns):
-            self.scroll_frame.grid_columnconfigure(i, weight=1)
-
-    def refresh_screenshots(self):
-        if not self.controller.is_adb_connected:
-            messagebox.showwarning("Not Connected", "Please connect to the emulator first.")
-            return
-
-        self.status_label.config(text="  Scanning...")
-        for widget in self.screenshot_widgets:
+    def populate_online_list(self):
+        for widget in self.online_list_frame.winfo_children():
             widget.destroy()
-        self.screenshot_widgets.clear()
-        self.controller.run_in_thread(self._threaded_scan)
 
-    def _threaded_scan(self):
-        filenames = self.controller.adb.list_device_files(self.DEVICE_PATH)
-        if filenames is None:
-            self.controller.after(0, self.on_scan_complete, None)
+        if self.available_extensions is None:
+            self.status_label.config(text="Error fetching list. Check console.", bootstyle="danger")
+            return
+        if not self.available_extensions:
+            self.status_label.config(text="No extensions found online.")
             return
 
-        screenshot_data = []
-        for fname in sorted(filenames):
-            if fname.lower().endswith(('.jpg', '.jpeg', '.png')):
-                device_path = f"{self.DEVICE_PATH}{fname}"
-                temp_path = os.path.join(self.controller.TEMP_ICON_DIR, f"ss_{fname}")
-                if self.controller.adb.pull_file(device_path, temp_path):
-                    screenshot_data.append({'name': fname, 'local_path': temp_path})
-        
-        self.controller.after(0, self.on_scan_complete, screenshot_data)
+        self.status_label.config(text=f"Found {len(self.available_extensions)} extensions.", bootstyle="default")
+        self.populate_installed_list() # Re-populate to update status
 
-    def on_scan_complete(self, data):
-        if data is None:
-            self.status_label.config(text="  Error scanning device.")
+        for name, meta in self.available_extensions.items():
+            card = ttk.Frame(self.online_list_frame, bootstyle="dark", padding=10)
+            card.pack(fill=X, pady=5, padx=5)
+            
+            ttk.Label(card, text=meta['name'], font=("Helvetica", 11, "bold"), bootstyle="inverse-dark").pack(anchor=W)
+            ttk.Label(card, text=meta['description'], wraplength=400, bootstyle="inverse-dark").pack(anchor=W, pady=(5,10))
+            
+            info_frame = ttk.Frame(card, bootstyle="dark")
+            info_frame.pack(fill=X)
+            ttk.Label(info_frame, text=f"Version: {meta['version']}", bootstyle="inverse-dark").pack(side=LEFT)
+            ttk.Label(info_frame, text=f"By: {meta.get('author', 'Unknown')}", bootstyle="inverse-dark").pack(side=RIGHT)
+            
+            btn_frame = ttk.Frame(card, bootstyle="dark")
+            btn_frame.pack(fill=X, pady=(10,0))
+            
+            if name in self.installed_extensions:
+                installed_version = self.installed_extensions[name].get('version', '0.0.0')
+                online_version = meta.get('version', '0.0.0')
+                if online_version > installed_version:
+                     ttk.Button(btn_frame, text="Update", command=lambda n=name: self.install_extension(n), bootstyle="success").pack(side=RIGHT)
+                else:
+                    ttk.Label(btn_frame, text="Installed", bootstyle="success-inverse").pack(side=RIGHT)
+            else:
+                ttk.Button(btn_frame, text="Install", command=lambda n=name: self.install_extension(n), bootstyle="primary").pack(side=RIGHT)
+
+    def populate_installed_list(self):
+        self.installed_extensions = {}
+        ext_dir = os.path.join(self.controller.get_script_directory(), "Extensions")
+        if not os.path.isdir(ext_dir):
             return
 
-        for item_data in data:
-            try:
-                widget = ScreenshotItem(self.scroll_frame, self, item_data)
-                self.screenshot_widgets.append(widget)
-            except Exception as e:
-                print(f"Could not create widget for {item_data['name']}: {e}")
-
-        self.redraw_grid()
-        self.status_label.config(text=f"  Found {len(self.screenshot_widgets)} screenshot(s).")
-
-    def on_item_select(self, widget, ctrl_pressed):
-        if not ctrl_pressed:
-            for w in self.screenshot_widgets:
-                if w != widget:
-                    w.set_selected(False)
+        for item_name in os.listdir(ext_dir):
+            item_path = os.path.join(ext_dir, item_name)
+            manifest_path = os.path.join(item_path, "manifest.json")
+            if os.path.isdir(item_path) and os.path.isfile(manifest_path):
+                try:
+                    with open(manifest_path, 'r', encoding='utf-8') as f:
+                        self.installed_extensions[item_name] = json.load(f)
+                except Exception as e:
+                    print(f"Could not load manifest for installed extension '{item_name}': {e}")
         
-        widget.set_selected(not widget.is_selected)
-
-    def start_rename(self, widget):
-        entry = ttk.Entry(widget.name_label)
-        entry.place(relwidth=1.0, relheight=1.0)
-        
-        current_name = widget.name_var.get()
-        entry.insert(0, current_name)
-        entry.focus_force()
-        entry.select_range(0, 'end')
-
-        entry.bind("<Return>", lambda e, w=widget, entry_widget=entry: self.finish_rename(w, entry_widget))
-        entry.bind("<FocusOut>", lambda e, w=widget, entry_widget=entry: self.finish_rename(w, entry_widget))
-
-    def finish_rename(self, widget, entry_widget):
-        new_name = entry_widget.get().strip()
-        entry_widget.destroy()
-
-        old_name = widget.data['name']
-        if not new_name or new_name == old_name:
+        for widget in self.installed_list_frame.winfo_children():
+            widget.destroy()
+            
+        if not self.installed_extensions:
+            ttk.Label(self.installed_list_frame, text="No extensions are installed locally.").pack(padx=10, pady=10)
             return
-
-        if any(c in new_name for c in '/\\:*?"<>|'):
-            messagebox.showerror("Invalid Name", "Filename contains invalid characters.")
-            return
-
-        log = self.controller.log_to_ui
-        log(f"Attempting to rename '{old_name}' to '{new_name}'...")
         
-        old_path = f"{self.DEVICE_PATH}{old_name}"
-        new_path = f"{self.DEVICE_PATH}{new_name}"
-        
-        self.controller.adb.send_adb_command(f"shell mv \"{old_path}\" \"{new_path}\"", log)
-        
-        widget.data['name'] = new_name
-        widget.name_var.set(new_name)
-        log("Rename complete.")
+        for name, meta in self.installed_extensions.items():
+            card = ttk.Frame(self.installed_list_frame, bootstyle="dark", padding=10)
+            card.pack(fill=X, pady=5, padx=5)
+            
+            ttk.Label(card, text=meta['name'], font=("Helvetica", 11, "bold"), bootstyle="inverse-dark").pack(anchor=W)
+            ttk.Label(card, text=f"Version: {meta['version']}", bootstyle="inverse-dark").pack(anchor=W)
 
-    def download_selected(self):
-        selected_widgets = [w for w in self.screenshot_widgets if w.is_selected]
-        if not selected_widgets:
-            messagebox.showinfo("No Selection", "Please select screenshots to download.")
-            return
+            ttk.Button(card, text="Uninstall", bootstyle="danger-outline", command=lambda n=name: self.uninstall_extension(n)).pack(side=RIGHT, pady=5)
+    
+    def install_extension(self, extension_name):
+        self.status_label.config(text=f"Installing {extension_name}...")
+        self.controller.show_loading_overlay(f"Installing {extension_name}...")
+        target_dir = os.path.join(self.controller.get_script_directory(), "Extensions")
+        self.controller.run_in_thread(self._threaded_install, extension_name, target_dir)
 
-        downloads_path = Path.home() / "Downloads"
-        os.makedirs(downloads_path, exist_ok=True)
+    def _threaded_install(self, name, target_dir):
+        success = self.github_handler.download_extension(name, target_dir)
+        self.controller.after(0, self.on_install_complete, name, success)
         
-        self.controller.show_loading_overlay(f"Downloading {len(selected_widgets)} file(s)...")
-        self.controller.run_in_thread(self._threaded_download, selected_widgets, downloads_path)
-
-    def _threaded_download(self, widgets, pc_path):
-        success_count = 0
-        for widget in widgets:
-            filename = widget.data['name']
-            device_file = f"{self.DEVICE_PATH}{filename}"
-            local_file = pc_path / filename
-            if self.controller.adb.pull_file(device_file, str(local_file)):
-                success_count += 1
-        
-        self.controller.after(0, self.on_download_complete, success_count, len(widgets), pc_path)
-
-    def on_download_complete(self, success_count, total, pc_path):
+    def on_install_complete(self, name, success):
         self.controller.hide_loading_overlay()
-        messagebox.showinfo("Download Complete", f"Downloaded {success_count} of {total} to:\n\n{pc_path}")
+        if success:
+            self.show_restart_banner()
+            self.refresh_online_list()
+            # --- THE FIX IS HERE ---
+            # Make it explicitly clear a restart is needed.
+            ttk.dialogs.Messagebox.show_info(
+                title="Restart Required",
+                message=f"Extension '{name}' installed successfully.\n\nPlease restart the application to apply the changes."
+            )
+        else:
+            ttk.dialogs.Messagebox.show_error("Installation failed. Check the console for more details.", "Error")
+            self.status_label.config(text="Installation failed.", bootstyle="danger")
 
+    def uninstall_extension(self, extension_name):
+        if not ttk.dialogs.Messagebox.yesno(f"Are you sure you want to uninstall '{extension_name}'?", "Confirm Uninstall"):
+            return
+        
+        ext_path = os.path.join(self.controller.get_script_directory(), "Extensions", extension_name)
+        try:
+            import shutil
+            shutil.rmtree(ext_path)
+            self.show_restart_banner()
+            self.populate_installed_list()
+            self.populate_online_list()
+            # --- THE FIX IS HERE ---
+            # Also notify the user on uninstall.
+            ttk.dialogs.Messagebox.show_info(
+                title="Restart Required",
+                message=f"Extension '{extension_name}' has been uninstalled.\n\nPlease restart the application to complete the process."
+            )
+        except Exception as e:
+            ttk.dialogs.Messagebox.show_error(f"Could not uninstall extension: {e}", "Error")
 
-class SMXExtension:
-    """This is the main entry point for the SMX Screenshots extension."""
-    def __init__(self):
-        self.name = "SMX Screenshots"
-        self.description = "Browse, rename, and download in-game screenshots from your device."
-        self.version = "1.1.0" # Version bumped for UI redesign
-
-    def initialize(self, app):
-        """Called by the main application to let the extension integrate itself."""
-        print(f"INFO: Initializing extension '{self.name}' v{self.version}")
-        self.app = app
-        self.app.add_extension_tab(self.name, ScreenshotsFrame)
-
-    def on_close(self):
-        """Called when the main application is closing."""
-        print(f"INFO: Closing extension '{self.name}'.")
-        pass
+    def show_restart_banner(self):
+        """Makes the restart banner visible at the top of the frame."""
+        self.restart_banner.pack(side=TOP, fill=X, padx=15, pady=(15, 0), before=self.main_pane)
