@@ -19,6 +19,7 @@ class ModDisplayItem(ttk.Frame):
         self.view_mode = view_mode
         self.install_button = None
         self.uninstall_button = None
+        self.update_button = None
         self.suit_images = {} # To prevent garbage collection
         self.images_loaded = False # NEW: Lazy loading flag
 
@@ -115,6 +116,8 @@ class ModDisplayItem(ttk.Frame):
         if self.view_mode == 'local':
             ttk.Label(details_frame, text=f"Files: {self.mod_data.get('file_count', 'N/A')}", font=("Helvetica", 9), bootstyle="inverse-dark").pack(side='left', padx=(0,10))
             if self.mod_data['status'] == 'Installed':
+                self.update_button = ttk.Button(details_frame, text="Update", bootstyle="success-outline", command=lambda p=self.mod_data['full_path']: self.controller.frames["Mod Manager"].on_install_single(p))
+                self.update_button.pack(side='left', padx=(0, 5))
                 self.uninstall_button = ttk.Button(details_frame, text="Uninstall", bootstyle="danger-outline", command=lambda p=self.mod_data['full_path']: self.controller.frames["Mod Manager"].on_uninstall_single(p))
                 self.uninstall_button.pack(side='left', padx=(0, 10))
             else:

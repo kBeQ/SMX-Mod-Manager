@@ -200,6 +200,8 @@ class ModManagerFrame(ttk.Frame):
                     item.install_button.config(state=modding_state)
                 if item.uninstall_button:
                     item.uninstall_button.config(state=modding_state)
+                if item.update_button:
+                    item.update_button.config(state=modding_state)
 
     def build_nav(self, data_manager):
         if not self.controller.get_local_library_paths():
@@ -390,21 +392,15 @@ class ModManagerFrame(ttk.Frame):
             messagebox.showinfo("Nothing to Uninstall", "None of the selected mods are currently installed on the device.")
             return
             
-        mod_names = "\n - ".join([os.path.basename(p) for p in installed_mods_to_uninstall])
-        if messagebox.askyesno("Confirm Uninstall", f"Are you sure you want to uninstall {len(installed_mods_to_uninstall)} mod(s)?\n\n - {mod_names}"):
-            self.controller.run_in_thread(self.controller.uninstall_mods, installed_mods_to_uninstall)
+        self.controller.run_in_thread(self.controller.uninstall_mods, installed_mods_to_uninstall)
 
     def on_install_single(self, path):
-        mod_name = os.path.basename(path)
-        if messagebox.askyesno("Confirm Install", f"Are you sure you want to install this mod?\n\n- {mod_name}"):
-            lib = self.selected_library.get()
-            cat = self.selected_category.get()
-            self.controller.run_in_thread(self.controller.install_mods, [path], lib, cat)
+        lib = self.selected_library.get()
+        cat = self.selected_category.get()
+        self.controller.run_in_thread(self.controller.install_mods, [path], lib, cat)
 
     def on_uninstall_single(self, path):
-        mod_name = os.path.basename(path)
-        if messagebox.askyesno("Confirm Uninstall", f"Are you sure you want to uninstall this mod?\n\n- {mod_name}"):
-            self.controller.run_in_thread(self.controller.uninstall_mods, [path])
+        self.controller.run_in_thread(self.controller.uninstall_mods, [path])
 
     def on_push_mods(self):
         selected_keys = self.local_mods_frame.get_selected_keys()
@@ -414,10 +410,7 @@ class ModManagerFrame(ttk.Frame):
         
         lib = self.selected_library.get()
         cat = self.selected_category.get()
-        mod_names = "\n - ".join([os.path.basename(p) for p in selected_keys])
-        
-        if messagebox.askyesno("Confirm Install/Update", f"Are you sure you want to process {len(selected_keys)} mod(s)?\n\n - {mod_names}"):
-            self.controller.run_in_thread(self.controller.install_mods, selected_keys, lib, cat)
+        self.controller.run_in_thread(self.controller.install_mods, selected_keys, lib, cat)
         
     def log(self, message):
         self.log_output_text.text.config(state='normal')
