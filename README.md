@@ -1,7 +1,6 @@
 # SMX Mod Manager
 
-<!-- The path starts from the root of your project -->
-![SMX Mod Manager Banner](/assets/SMX%20Mod%20Manager.png)
+<!-- The path starts from the root of your project -->![SMX Mod Manager Banner](/assets/SMX%20Mod%20Manager.png)
 
 <div align="center">
 
@@ -22,7 +21,6 @@ This tool is specifically designed for **SMX: Supermoto Vs. Motocross v8.0.2**.
 *   **Organize Your Mods:** Set up "Libraries" for your `Tracks`, `Suits`, & `Sounds`, and organize them with custom categories.
 *   **One-Click Install/Update:** Select one or more mods and push them to the emulator with a single click.
 *   **Rich Mod Previews:** The UI automatically validates mod `.zip` archives and shows previews for textures and required files.
-*   **Clean Up In-Game Mods:** The "On Device" tab lets you see and delete mods downloaded from the in-game browser.
 *   **Built-in ADB Console:** A console for power users to send custom commands directly to the emulator.
 *   **Game Launch Control:** Launch or force-stop the game directly from the tool.
 *   **Customizable Interface:** Choose from several themes to personalize your experience.
@@ -37,15 +35,6 @@ This is your main workspace. It displays all the mod `.zip` files the manager ha
 *   **Library & Category Navigation:** At the top, you can switch between your main libraries (`[Tracks] Tracks`, `[Suits] Suits`, etc.) and then filter by the categories you created in your folders (`Uncategorized`, `Games`, etc.).
 *   **The Controls Panel:** The panel on the left contains your main actions: Search, Quick Select buttons, and the primary Install/Uninstall buttons.
 *   **The Mod Card:** Each mod is displayed on its own card, which validates critical files found inside the `.zip` archive (like `Track.smxlevel`) and provides quick action buttons.
-
-### The On Device Tab: Cleaning Up In-Game Mods
-This tab is your solution for managing mods you've downloaded from the in-game mod.io browser.
-
-![On Device Library](/docs/SMXMM-OnDevice.png)
-
-*   **Scan Your Device:** See a full list of all "unmanaged" mods currently installed on the emulator.
-*   **Filter and Delete:** Quickly filter by mod type and select one or more mods to permanently remove them from your device.
-
 
 
 ## ⚠️ Prerequisites
@@ -70,8 +59,7 @@ The Mod Manager works by linking to the folders on your PC where you store your 
 
 *   Open the Mod Manager and go to the **Settings** tab.
 *   Under "Local Mod Library," click **"Add Folder..."**.
-![SMX Mod Manager Libraries](/docs/SMXMM-Libraries.png)
-*   Select the folder that contains your **Tracks** (e.g., a folder on your PC named `My Tracks`).
+![SMX Mod Manager Libraries](/docs/SMXMM-Libraries.png)*   Select the folder that contains your **Tracks** (e.g., a folder on your PC named `My Tracks`).
 *   When prompted, set the library type to **'Tracks'**.
 
     ![SMX Mod Manager Libraries](/docs/SMXMM-LibraryType.png)

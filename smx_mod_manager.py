@@ -91,7 +91,7 @@ class App(ttk.Window):
         SplashScreen(self)
 
         self.title(f"SMX Mod Manager v{APP_VERSION}")
-        self.geometry("1400x850")
+        self.geometry("1400x850") # This now acts as a fallback for the first launch
 
         try:
             icon_path = get_resource_path("smx_mod_manager.ico")
@@ -106,7 +106,6 @@ class App(ttk.Window):
 
         self.github_handler = GitHubHandler()
         self.extensions = {}
-        # --- NEW: Dynamic list of library types and a registry for custom scanners ---
         self.library_types = ["Tracks", "Sounds", "Suits"]
         self.custom_library_scanners = {}
         self.setting_vars = {}
@@ -114,6 +113,14 @@ class App(ttk.Window):
         self.mod_mappings = {}
         self.extension_settings = {}
         self.load_config()
+
+        # --- NEW: Restore window geometry after loading config ---
+        if self.saved_config.get("window_geometry"):
+            try:
+                self.geometry(self.saved_config["window_geometry"])
+            except tk.TclError as e:
+                print(f"WARNING: Could not restore window geometry. Using default. Error: {e}")
+
         self.load_mappings()
         self._load_extension_settings()
         self.is_mods_folder_known_to_exist = self.saved_config.get("mods_folder_exists", False)
@@ -192,7 +199,7 @@ class App(ttk.Window):
 
     def _load_extensions(self):
         """Discovers and loads all valid extensions from the local directory."""
-        ext_dir = Path(self.get_script_directory()) / "Extensions" # Now calls the method
+        ext_dir = Path(self.get_script_directory()) / "Extensions"
         if not ext_dir.is_dir():
             print("INFO: No 'Extensions' directory found. Skipping extension loading.")
             return
@@ -236,16 +243,11 @@ class App(ttk.Window):
         self.frames[name] = frame
         frame.grid(row=0, column=0, sticky="nsew")
         print(f"  -> Extension '{name}' successfully added a UI tab.")
-        
+    
     def register_library_scanner(self, library_type_name, scanner_function):
         """
         API for an extension to register a new type of library and provide
         the function to scan its contents.
-        
-        :param library_type_name: The name for the new library type (e.g., "Suits (Unity Project)").
-        :param scanner_function: The function to call when scanning a library of this type.
-                                This function must accept a 'base_path' string argument
-                                and return a dictionary in the standard local_data format.
         """
         if library_type_name in self.library_types:
             print(f"WARNING: Library type '{library_type_name}' is already registered. Overwriting.")
@@ -268,24 +270,11 @@ class App(ttk.Window):
             self.extension_settings = {}
 
     def get_extension_setting(self, extension_name, setting_key, default=None):
-        """
-        Allows an extension to retrieve one of its saved settings.
-        
-        :param extension_name: The unique name of the extension (e.g., 'SMX CMM Unity Export').
-        :param setting_key: The name of the setting to retrieve (e.g., 'unity_project_path').
-        :param default: The value to return if the setting is not found.
-        :return: The stored value or the default.
-        """
+        """Allows an extension to retrieve one of its saved settings."""
         return self.extension_settings.get(extension_name, {}).get(setting_key, default)
 
     def save_extension_setting(self, extension_name, setting_key, value):
-        """
-        Allows an extension to save a setting. The settings are saved to disk immediately.
-        
-        :param extension_name: The unique name of the extension.
-        :param setting_key: The name of the setting to save.
-        :param value: The value to store.
-        """
+        """Allows an extension to save a setting. The settings are saved to disk immediately."""
         if extension_name not in self.extension_settings:
             self.extension_settings[extension_name] = {}
         
@@ -410,7 +399,7 @@ class App(ttk.Window):
             self.clear_device_data()
 
         self.frames["Mod Manager"].update_control_state()
-        if "On Device" in self.frames: # Defensive check
+        if "On Device" in self.frames:
             self.frames["On Device"].update_control_state()
 
     def clear_device_data(self):
@@ -463,8 +452,8 @@ class App(ttk.Window):
     def _update_ui_after_mod_operation(self, local_paths, new_status):
         for path in local_paths:
             mod_found = False
-            for lib, cats in self.data_manager.local_data.items():
-                for cat, mods in cats.items():
+            for cats in self.data_manager.local_data.values():
+                for mods in cats.values():
                     for mod in mods:
                         if mod['full_path'] == path:
                             mod['status'] = new_status
@@ -484,7 +473,7 @@ class App(ttk.Window):
 
     def install_mods(self, local_paths, library, category):
         if not self.is_adb_connected or not self.is_mods_folder_known_to_exist:
-            messagebox.showerror("Cannot Install", "Emulator not connected or game mods folder not found. Please connect and run the game once.")
+            messagebox.showerror("Cannot Install", "Emulator not connected or game mods folder not found.")
             return
             
         target_dir = self.full_mods_path_var.get()
@@ -520,7 +509,7 @@ class App(ttk.Window):
 
     def uninstall_mods(self, local_paths):
         if not self.is_adb_connected or not self.is_mods_folder_known_to_exist:
-            messagebox.showerror("Cannot Uninstall", "Emulator not connected or game mods folder not found. Please connect and run the game once.")
+            messagebox.showerror("Cannot Uninstall", "Emulator not connected or game mods folder not found.")
             return
 
         target_dir = self.full_mods_path_var.get()
@@ -614,6 +603,12 @@ class App(ttk.Window):
                 elif details['type'] == 'internal':
                     data_to_save[category][name] = details['value']
         data_to_save['mods_folder_exists'] = self.is_mods_folder_known_to_exist
+        
+        # --- NEW: Save window geometry ---
+        # Check window state to avoid saving invalid geometry (e.g., when minimized)
+        if self.state() == 'normal':
+            data_to_save['window_geometry'] = self.winfo_geometry()
+
         with open(CONFIG_FILE, 'w') as f: json.dump(data_to_save, f, indent=4)
 
     def load_mappings(self):
@@ -674,7 +669,7 @@ class App(ttk.Window):
     def restart_app(self):
         """Restarts the current application."""
         print("INFO: Application restart requested.")
-        self.on_closing() 
+        self.on_closing()
         
         os.execv(sys.executable, ['python'] + [sys.argv[0]])
 
