@@ -184,10 +184,21 @@ class App(ttk.Window):
         print(f"--- Found {len(self.extensions)} valid local extension(s) ---")
 
     def add_extension_tab(self, name, frame_class):
-        if name in self.frames: return
-        btn = ttk.Button(self.nav_frame, text=name, command=lambda n=name: self.show_frame(n), bootstyle="secondary", padding=(0, 10))
-        btn.pack(side="left", fill="x", expand=True, padx=(0,1))
+        """Allows an extension to add a new top-level navigation button and frame."""
+        if name in self.frames:
+            print(f"WARNING: Extension tried to add a duplicate tab named '{name}'.")
+            return
+
+        btn = ttk.Button(
+            self.nav_frame,
+            text=name,
+            command=lambda n=name: self.show_frame(n),
+            bootstyle="secondary",
+            padding=(0, 10)
+        )
+        btn.pack(side="left", fill="x", expand=True, padx=(0, 1))
         self.nav_buttons[name] = btn
+
         frame = frame_class(self.container, self)
         self.frames[name] = frame
         frame.grid(row=0, column=0, sticky="nsew")

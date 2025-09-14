@@ -16,8 +16,7 @@ class SMXExtension:
         print(f"INFO: Initializing extension '{self.name}' v{self.version}")
         self.app = app
         
-        # This is the key part that adds the "Sound Creator" button to the top navigation
-        # and registers the UI frame to be shown when clicked.
+        # This calls the function in the main app to add the tab to the top navigation bar.
         self.app.add_extension_tab(self.name, SoundModCreatorFrame)
 
     def on_close(self):
