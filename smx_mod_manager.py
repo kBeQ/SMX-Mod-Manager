@@ -26,7 +26,7 @@ from src.github_handler import GitHubHandler
 CONFIG_FILE = "config.json"
 MAPPINGS_FILE = "mod_mappings.json"
 EXTENSIONS_SETTINGS_FILE = "extensions_settings.json" 
-APP_VERSION = "8.0.5" # Version bump for critical sync/extension bug fix
+APP_VERSION = "8.0.5" # Version bump for critical architecture fix
 
 def get_resource_path(filename):
     if getattr(sys, "frozen", False): base_dir = sys._MEIPASS
@@ -34,7 +34,6 @@ def get_resource_path(filename):
     return os.path.join(base_dir, 'assets', filename)
 
 class SplashScreen:
-    # ... (This class is unchanged) ...
     def __init__(self, parent):
         self.parent = parent
         self.splash = tk.Toplevel(parent)
@@ -79,8 +78,13 @@ class App(ttk.Window):
 
         self.github_handler = GitHubHandler()
         self.extensions = {}
+        
+        # --- THE FIX IS HERE ---
+        # 1. Define base types and a registry for extension scanners.
+        # This state is now reliable and not based on appending to a list.
         self.base_library_types = ["Tracks", "Sounds", "Suits"]
         self.custom_library_scanners = {}
+        
         self.setting_vars = {}
         self.saved_config = {}
         self.mod_mappings = {}
@@ -189,6 +193,9 @@ class App(ttk.Window):
         frame.grid(row=0, column=0, sticky="nsew")
         print(f"  -> Extension '{name}' successfully added a UI tab.")
     
+    # --- THE FIX IS HERE ---
+    # 2. The registration function now only manages the dictionary.
+    # It also prevents extensions from overwriting built-in types.
     def register_library_scanner(self, type_name, func):
         if type_name in self.base_library_types:
             print(f"ERROR: Extension tried to overwrite a built-in library type: '{type_name}'")
@@ -198,9 +205,14 @@ class App(ttk.Window):
         self.custom_library_scanners[type_name] = func
         print(f"  -> Extension registered scanner for type: '{type_name}'")
 
+    # --- THE FIX IS HERE ---
+    # 3. This method dynamically builds the list of all available types on demand.
+    # It is no longer a static list that gets appended to.
     def get_available_library_types(self):
+        """Returns a combined list of base types and types registered by extensions."""
+        # Combine the base list with the keys (names) from the custom scanner dictionary
         all_types = self.base_library_types + list(self.custom_library_scanners.keys())
-        return sorted(list(set(all_types)))
+        return sorted(list(set(all_types))) # Use set to remove duplicates just in case
 
     def _load_extension_settings(self):
         try:
@@ -498,12 +510,8 @@ class App(ttk.Window):
                     lib_path_obj = Path(local_path)
                     lib_root = next((lib['path'] for lib in self.get_local_library_paths() if Path(lib['path']) in lib_path_obj.parents), None)
                     
-                    # --- THE FIX IS HERE ---
-                    # This logic correctly determines the category for both standard and custom libraries.
                     parent_folder_name = lib_path_obj.parent.name
                     category = parent_folder_name.replace("c_", "", 1) if parent_folder_name.startswith("c_") else parent_folder_name
-
-                    # Handle case where the mod is in the root of a standard library
                     if lib_root and Path(lib_root) == lib_path_obj.parent:
                         category = "Uncategorized"
 

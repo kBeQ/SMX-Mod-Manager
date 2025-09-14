@@ -180,7 +180,6 @@ class SettingsFrame(ttk.Frame):
 
         self._bind_recursive(self.scrollable_frame, "<MouseWheel>", self._on_mousewheel)
 
-
     def build_library_manager(self):
         lib_frame = ttk.Labelframe(self.scrollable_frame, text="Local Mod Library", padding=15)
         lib_frame.pack(padx=0, pady=10, fill='x')
@@ -205,8 +204,7 @@ class SettingsFrame(ttk.Frame):
         ttk.Button(btn_frame, text="Change Type...", command=self.change_library_type, bootstyle="outline").pack(side='left', padx=5)
         ttk.Button(btn_frame, text="Remove Selected", command=self.remove_library_folder, bootstyle="outline-danger").pack(side='left')
         
-        # --- NEW: Add the Sync Mappings button to the right side ---
-        ttk.Button(btn_frame, text="Sync Mappings", command=self.controller.sync_mod_mappings, bootstyle="outline-info").pack(side='right')
+        # --- REMOVED: The sync button no longer lives here ---
 
     def add_library_folder(self):
         folder = filedialog.askdirectory(title="Select a folder containing mods")
@@ -276,10 +274,8 @@ class SettingsFrame(ttk.Frame):
 
     def browse_file(self, var_to_set):
         filename = filedialog.askopenfilename(title="Select File", filetypes=[("All files", "*.*")])
-        if filename:
-            var_to_set.set(filename)
+        if filename: var_to_set.set(filename)
 
     def browse_folder(self, var_to_set):
         foldername = filedialog.askdirectory(title="Select Folder")
-        if foldername:
-            var_to_set.set(foldername)
+        if foldername: var_to_set.set(foldername)
