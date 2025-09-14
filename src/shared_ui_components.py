@@ -22,7 +22,7 @@ class ModDisplayItem(ttk.Frame):
         self.update_button = None
         self.details_frame = None
         self.suit_images = {} # To prevent garbage collection
-        self.images_loaded = False # NEW: Lazy loading flag
+        self.images_loaded = False 
 
         self.build_ui_placeholders()
 
@@ -30,16 +30,13 @@ class ModDisplayItem(ttk.Frame):
         """Updates the mod's status and redraws the buttons without rebuilding the whole widget."""
         self.mod_data['status'] = new_status
         
-        # Clear out the old buttons
         if self.details_frame:
             for widget in self.details_frame.winfo_children():
                 widget.destroy()
-            # Rebuild the buttons and labels within the same frame
             self._build_details_frame_content()
 
     def _build_details_frame_content(self):
         """Builds or rebuilds the content of the details frame (buttons, file count, etc.)."""
-        # Reset button references so they can be garbage collected if they exist
         self.install_button = None
         self.uninstall_button = None
         self.update_button = None
@@ -54,8 +51,6 @@ class ModDisplayItem(ttk.Frame):
             else:
                 self.install_button = ttk.Button(self.details_frame, text="Install", bootstyle="success-outline", command=lambda p=self.mod_data['full_path']: self.controller.frames["Mod Manager"].on_install_single(p))
                 self.install_button.pack(side='left', padx=(0, 10))
-            # --- THE FIX IS HERE ---
-            # The old text-based "Open Folder" button has been removed from this section.
         
         elif self.view_mode == 'unmanaged':
             ttk.Label(self.details_frame, text=f"Device Folder: '{self.mod_data['device_folder']}'", font=("Helvetica", 8), bootstyle="inverse-dark", wraplength=150).pack(side='left')
@@ -64,11 +59,9 @@ class ModDisplayItem(ttk.Frame):
 
     def build_ui_placeholders(self):
         """Builds the widget structure with placeholder images."""
-        # --- THE FIX IS HERE: Configure columns for name (expanding) and button (fixed) ---
         self.content_frame.grid_columnconfigure(0, weight=1)
         self.content_frame.grid_columnconfigure(1, weight=0)
 
-        # --- Row 0: Name and (new) Open Folder Button ---
         name_frame = ttk.Frame(self.content_frame, bootstyle="dark")
         name_frame.grid(row=0, column=0, sticky="ew", padx=8, pady=(5, 10))
         name_label = ttk.Label(name_frame, text=self.mod_data['name'], font=("Helvetica", 11, "bold"), wraplength=280, justify='left', bootstyle="inverse-dark")
@@ -77,7 +70,6 @@ class ModDisplayItem(ttk.Frame):
         if self.view_mode == 'unmanaged':
             ttk.Label(name_frame, text="[Unmanaged]", font=("Helvetica", 8, "bold"), bootstyle="warning").pack(side='left', padx=5)
         
-        # --- THE FIX IS HERE: Add the new icon button for 'local' view mode ---
         if self.view_mode == 'local':
             open_folder_button = ttk.Button(
                 self.content_frame, 
@@ -88,20 +80,17 @@ class ModDisplayItem(ttk.Frame):
             )
             open_folder_button.grid(row=0, column=1, sticky="ne", padx=(0, 5), pady=5)
 
-        # --- Row 1: Main Image Content ---
         images_frame = ttk.Frame(self.content_frame, bootstyle="dark")
         images_frame.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
         images_frame.grid_columnconfigure(0, weight=2)
         images_frame.grid_columnconfigure(1, weight=1)
         
-        details_row = 2 # Default row for the details/buttons frame
+        details_row = 2 
         
-        # --- Preview ---
         preview_box = self._create_image_box_placeholder(images_frame, "Preview", (180, 101))
         preview_box.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
         self.preview_image_label = preview_box.image_widget
 
-        # --- DYNAMIC UI: Icon or File Status ---
         mod_type = self.mod_data.get('library_type') or self.mod_data.get('mod_type')
 
         if mod_type == 'Tracks':
@@ -227,18 +216,23 @@ class ModDisplayItem(ttk.Frame):
                 img.thumbnail(size, Image.Resampling.LANCZOS)
                 return ImageTk.PhotoImage(img)
             except Exception as e:
-                if self.mod_data.get('library_type') != 'Suits' and self.mod_data.get('mod_type') != 'Suits':
-                    self.controller.frames["Mod Manager"].log(f"ERROR: Failed to load image {path}: {e}")
+                self.controller.log_to_ui(f"ERROR: Failed to load image {path}: {e}")
         return self.list_view.get_placeholder(size, placeholder_text)
 
+    # --- MODIFIED: Opens the containing folder if the path is a file ---
     def open_folder_in_explorer(self, path):
         if not path: return
+        
+        target_path = path
+        if os.path.isfile(path):
+            target_path = os.path.dirname(path)
+
         try:
-            if sys.platform == "win32": os.startfile(os.path.normpath(path))
-            elif sys.platform == "darwin": subprocess.Popen(["open", path])
-            else: subprocess.Popen(["xdg-open", path])
+            if sys.platform == "win32": os.startfile(os.path.normpath(target_path))
+            elif sys.platform == "darwin": subprocess.Popen(["open", target_path])
+            else: subprocess.Popen(["xdg-open", target_path])
         except Exception as e:
-            self.controller.frames["Mod Manager"].log(f"Error opening folder: {e}")
+            self.controller.log_to_ui(f"Error opening folder: {e}")
 
 class ModListView(ttk.Frame):
     def __init__(self, parent, controller, view_type='local'):
@@ -399,7 +393,7 @@ class ModListView(ttk.Frame):
             
             mod_key = mod_data.get('full_path') if view_mode == 'local' else mod_data.get('device_folder')
             if not mod_key:
-                self.controller.frames["Mod Manager"].log(f"ERROR: Could not create mod widget, mod_key is missing for data: {mod_data}")
+                self.controller.log_to_ui(f"ERROR: Could not create mod widget, mod_key is missing for data: {mod_data}")
                 widget.destroy()
                 return
 
@@ -408,7 +402,7 @@ class ModListView(ttk.Frame):
             self._bind_recursive(widget, "<MouseWheel>", self._on_mousewheel)
             return widget
         except Exception as e:
-            self.controller.frames["Mod Manager"].log(f"FATAL: Failed to create widget for {mod_data.get('name')}. Error: {e}")
+            self.controller.log_to_ui(f"FATAL: Failed to create widget for {mod_data.get('name')}. Error: {e}")
             return None
 
     def _bind_recursive(self, widget, event, callback):

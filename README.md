@@ -5,7 +5,6 @@
 
 <div align="center">
 
-
 **[Latest Release](https://github.com/kBeQ/SMX-Mod-Manager/releases) • [License](/LICENSE)**
 
 </div>
@@ -22,7 +21,7 @@ This tool is specifically designed for **SMX: Supermoto Vs. Motocross v8.0.2**.
 
 *   **Organize Your Mods:** Set up "Libraries" for your `Tracks`, `Suits`, & `Sounds`, and organize them with custom categories.
 *   **One-Click Install/Update:** Select one or more mods and push them to the emulator with a single click.
-*   **Rich Mod Previews:** The UI automatically validates mod folders and shows previews for textures and required files.
+*   **Rich Mod Previews:** The UI automatically validates mod `.zip` archives and shows previews for textures and required files.
 *   **Clean Up In-Game Mods:** The "On Device" tab lets you see and delete mods downloaded from the in-game browser.
 *   **Built-in ADB Console:** A console for power users to send custom commands directly to the emulator.
 *   **Game Launch Control:** Launch or force-stop the game directly from the tool.
@@ -31,13 +30,13 @@ This tool is specifically designed for **SMX: Supermoto Vs. Motocross v8.0.2**.
 ## 🖥️ A Tour of the Application
 
 ### The Mod Manager Tab: Your Local Library
-This is your main workspace. It displays all the mods the manager has found in the Library folders you've set up on your PC.
+This is your main workspace. It displays all the mod `.zip` files the manager has found in the Library folders you've set up on your PC.
 
 ![SMX Mod Manager Main UI](/docs/SMXMM-On%20PC.png)
 
 *   **Library & Category Navigation:** At the top, you can switch between your main libraries (`[Tracks] Tracks`, `[Suits] Suits`, etc.) and then filter by the categories you created in your folders (`Uncategorized`, `Games`, etc.).
 *   **The Controls Panel:** The panel on the left contains your main actions: Search, Quick Select buttons, and the primary Install/Uninstall buttons.
-*   **The Mod Card:** Each mod is displayed on its own card, which validates critical files (like `Track.smxlevel`) and provides quick action buttons.
+*   **The Mod Card:** Each mod is displayed on its own card, which validates critical files found inside the `.zip` archive (like `Track.smxlevel`) and provides quick action buttons.
 
 ### The On Device Tab: Cleaning Up In-Game Mods
 This tab is your solution for managing mods you've downloaded from the in-game mod.io browser.
@@ -67,7 +66,7 @@ To use this tool, you **MUST** have the **Developer Emulator** version of Google
 ## 📖 How to Use
 
 ### 1. First-Time Setup
-The Mod Manager works by linking to the folders on your PC where you store your mods. Each folder you add is called a "Library" and must contain only one type of mod.
+The Mod Manager works by linking to the folders on your PC where you store your mod `.zip` files. Each folder you add is called a "Library" and must contain only one type of mod.
 
 *   Open the Mod Manager and go to the **Settings** tab.
 *   Under "Local Mod Library," click **"Add Folder..."**.
@@ -80,8 +79,8 @@ The Mod Manager works by linking to the folders on your PC where you store your 
 *   **Repeat this process for your `Suits` and `Sounds` folders.**
 *   **Flexibility:** You can add multiple libraries of the same type. For example, if you have tracks in `C:\Downloads\Tracks` and `D:\MyMods\SupermotoTracks`, you can add both as separate 'Tracks' libraries.
 
-> ### The Golden Rule: Library vs. Mod Folder
-> A common mistake is selecting an individual mod's folder as a Library. You must select the parent folder that *contains* your mod folders.
+> ### The Golden Rule: Library vs. Mod File
+> A common mistake is selecting a category folder (like `c_Supermoto`) or an individual mod's `.zip` file as a Library. You must select the parent folder that *contains* your categories and `.zip` files.
 >
 > **✅ Do This:** Add the parent folder containing your mods.
 > ```
@@ -89,84 +88,51 @@ The Mod Manager works by linking to the folders on your PC where you store your 
 > D:/My SMX Mods/Tracks/
 > ```
 >
-> **❌ Don't Do This:** Add the folder for a single mod.
+> **❌ Don't Do This:** Add a category folder or a single mod file.
 > ```
-> # Incorrect Library Path:
-> D:/My SMX Mods/Tracks/My Track/
+> # Incorrect Library Paths:
 > D:/My SMX Mods/Tracks/c_My Tracks/
+> D:/My SMX Mods/Tracks/My Awesome Track.zip
 > ```
 
 ### 2. Organizing Your Local Mods
-The manager expects a specific structure *inside* each Library folder you've added.
+The manager expects a specific structure *inside* each Library folder you've added. It scans for `.zip` files.
 
-*   **For Categories:** Create subfolders with a `c_` prefix (e.g., `c_4-Stroke`). Place your individual mod folders inside these category folders.
-*   **For Uncategorized Mods:** Place individual mod folders directly inside the Library folder. They will appear in the "Uncategorized" category for that Library.
+*   **For Categories:** Create subfolders with a `c_` prefix (e.g., `c_4-Stroke`). Place your mod `.zip` files inside these category folders.
+*   **For Uncategorized Mods:** Place mod `.zip` files directly inside the Library folder. They will appear in the "Uncategorized" category.
 
 ![SMX Mod Manager Libraries Categories](/docs/SMXMM-Libraries-Cat.png)
 
-
-
 **Example Structure:**
 ```
-    Sounds/
-    ├── c_4-Stroke/
-    │   └── My First Sound Mod/   <----  "Sounds/4-Stroke/"
-    │       ├── engine.wav
-    │       ├── high.wav
-    │       ├── idle.wav
-    │       ├── low.wav
-    │       └── preview.jpg
-    │
-    └── Sound 0/   <----  "Sounds/Uncategorized/"
-        ├── engine.wav
-        ├── high.wav
-        ├── idle.wav
-        ├── low.wav
-        └── preview.jpg
+📁 Sounds/
+├── 📁 c_4-Stroke/
+│   └── 📄 My First Sound Mod.zip
+│
+└── 📄 Sound 0.zip
 
+📁 Suits/
+├── 📁 c_Mx/
+│   └── 📄 My First Mx Suit.zip
+│
+└── 📄 Suit 0.zip
 
-    Suits/
-    ├── c_Mx/
-    │   └── My First Mx Suit/   <----  "Suits/Mx/"
-    │       ├── gear_suit.png
-    │       ├── gear_suit_normal.png
-    │       ├── preview.jpg
-    │       └── icon.jpg
-    │
-    └── Suit 0/   <----  "Suits/Uncategorized/"
-        ├── gear_suit.png
-        ├── gear_suit_normal.png
-        ├── preview.jpg
-        └── icon.jpg
-
-
-    Tracks/
-    ├── c_Supermoto/
-    │   └── My First Track/   <----  "Tracks/SuperMoto/"
-    │       ├── Track1.smxlevel
-    │       └── preview.jpg
-    │
-    └── Track 0/   <----  "Tracks/Uncategorized/"
-        ├── Track2.smxlevel
-        └── preview.jpg
-
+📁 Tracks/
+├── 📁 c_Supermoto/
+│   └── 📄 My First Track.zip
+│
+└── 📄 Track 0.zip
 
 ________________________________________________________________________________________________________
 Let's see a "default Library" structure:
 
-    LibraryFolder/
-        ├── c_Category 1/
-        │   └── Categorized Mod Folder 1/   <----  "LibraryFolder/Category 1/"
-        │       ├── Mod File.extension
-        │       └── preview.jpg
-        ├── c_Category 2/
-        │   └── Categorized Mod Folder 2/   <----  "LibraryFolder/Category 2/"
-        │       ├── Mod File.extension
-        │       └── preview.jpg
-        │
-        └── Uncategorized Mod Folder 1/   <----  "LibraryFolder/Uncategorized/"
-            ├── Mod File.extension
-            └── preview.jpg
+📁 LibraryFolder/
+    ├── 📁 c_Category 1/
+    │   └── 📄 Categorized Mod 1.zip
+    ├── 📁 c_Category 2/
+    │   └── 📄 Categorized Mod 2.zip
+    │
+    └── 📄 Uncategorized Mod 1.zip
 ```
 
 
@@ -174,7 +140,7 @@ Let's see a "default Library" structure:
 1.  Launch SMX Mod Manager.
 2.  Launch the Google Play Games Developer Emulator. The status should turn yellow.
 3.  Launch SMX. You can use the **"Launch Game"** button in the tool!
-4.  Wait for the status indicator to turn green and say "Connected".
+4.  Wait for the status indicator to turn green and say "Game Running".
 5.  Select the mod(s) you want to install. You can **Ctrl+Click** to select multiple.
 6.  Click the **"Install/Update Selected"** button. The log at the bottom will show the progress.
 
@@ -186,18 +152,18 @@ Let's see a "default Library" structure:
 **Q: I've seen official guides that mention creating a `mod_0_...` folder. Do I need to do that?**
 **A:** No, you don't! The tool handles this for you automatically.
 
-The game requires mods to be in a specially named folder (like `mod_0_MyMod`). When you install a mod, the tool does two things:
-1.  It creates the correctly named `mod_i_...` folder on your device.
-2.  It saves a link in its `mod_mappings.json` file to remember which local mod corresponds to which folder on the device.
+The game requires mods to be in a specially named folder (like `mod_0_MyMod`). When you install a mod from a `.zip` file, the tool does two things:
+1.  It unzips your mod, finds the contents, and creates the correctly named `mod_i_...` folder on your device.
+2.  It saves a link in its `mod_mappings.json` file to remember which local `.zip` file corresponds to which folder on the device.
 
-This mapping file is how the tool "manages" your mods, allowing it to know their status and uninstall them correctly. You just need to focus on your source folders, and the tool handles all the complex parts!
+This mapping file is how the tool "manages" your mods, allowing it to know their status and uninstall them correctly. You just need to focus on your source `.zip` files, and the tool handles all the complex parts!
 
 
 ## 🚀 Publishing your Mods
-For a guide on the recommended way to package your final mod files for distribution, see the guide on mod.io:
+For a guide on the recommended way to package your final mod files for distribution, see the guide on mod.io. The structure required by this tool is the same structure you should use for publishing.
 *   **[Guide: Zipping the Files for Release](https://mod.io/g/smx/r/zipping-the-files)**
 
-> **Note:** This guide was approved and is editable by the game's developer to ensure it stays up-to-date with best practices.
+> **Note:** Zipping the Files guide was approved and is editable by the game's developer to ensure it stays up-to-date with best practices.
 
 ## 💬 Community & Support
 **[Join the OE Games Discord Server](https://discord.gg/mJmb4HaRWN)**  to discuss the game, share mods, and get help from the community!
@@ -213,8 +179,8 @@ For a guide on the recommended way to package your final mod files for distribut
 ## 🛠️ Building from Source
 If you want to modify the tool or build it yourself:
 
-1.  Clone this repository: `git clone https://github.com/kBeQ/SMX Mod Manager.git`
-2.  Navigate into the project folder: `cd SMX Mod Manager`
+1.  Clone this repository: `git clone https://github.com/kBeQ/SMX-Mod-Manager.git`
+2.  Navigate into the project folder: `cd SMX-Mod-Manager`
 3.  Create and activate a Python virtual environment:
     ```bash
     python -m venv venv
