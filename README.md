@@ -1,6 +1,6 @@
 # SMX Mod Manager
 
-<!-- The path starts from the root of your project -->![SMX Mod Manager Banner](/assets/SMX%20Mod%20Manager.png)
+![SMX Mod Manager Banner](/assets/SMX%20Mod%20Manager.png)
 
 <div align="center">
 
