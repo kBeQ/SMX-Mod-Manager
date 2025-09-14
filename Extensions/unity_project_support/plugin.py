@@ -18,9 +18,10 @@ class SMXExtension:
         print(f"INFO: Initializing extension '{self.name}' v{self.version}")
         self.app = app
         
+        # Corrected the keyword arguments to match the function definition
         self.app.register_library_scanner(
-            library_type_name="Suits (Unity Project)", 
-            scanner_function=self.scan_unity_project_folder
+            type_name="Suits (Unity Project)", 
+            func=self.scan_unity_project_folder
         )
 
     def on_close(self):

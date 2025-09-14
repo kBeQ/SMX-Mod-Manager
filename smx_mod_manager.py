@@ -193,9 +193,6 @@ class App(ttk.Window):
         frame.grid(row=0, column=0, sticky="nsew")
         print(f"  -> Extension '{name}' successfully added a UI tab.")
     
-    # --- THE FIX IS HERE ---
-    # 2. The registration function now only manages the dictionary.
-    # It also prevents extensions from overwriting built-in types.
     def register_library_scanner(self, type_name, func):
         if type_name in self.base_library_types:
             print(f"ERROR: Extension tried to overwrite a built-in library type: '{type_name}'")
@@ -205,14 +202,9 @@ class App(ttk.Window):
         self.custom_library_scanners[type_name] = func
         print(f"  -> Extension registered scanner for type: '{type_name}'")
 
-    # --- THE FIX IS HERE ---
-    # 3. This method dynamically builds the list of all available types on demand.
-    # It is no longer a static list that gets appended to.
     def get_available_library_types(self):
-        """Returns a combined list of base types and types registered by extensions."""
-        # Combine the base list with the keys (names) from the custom scanner dictionary
         all_types = self.base_library_types + list(self.custom_library_scanners.keys())
-        return sorted(list(set(all_types))) # Use set to remove duplicates just in case
+        return sorted(list(set(all_types)))
 
     def _load_extension_settings(self):
         try:
