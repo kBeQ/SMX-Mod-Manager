@@ -146,7 +146,7 @@ class ModManagerFrame(ttk.Frame):
             self.update_mod_list()
 
     def update_control_state(self):
-        can_mod = self.controller.is_adb_connected and self.controller.is_mods_folder_known_to_exist
+        can_mod = self.controller.is_adb_connected
         is_game_running = self.controller.is_game_running
         is_adb_connected = self.controller.is_adb_connected
 
