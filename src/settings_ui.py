@@ -9,14 +9,13 @@ import re
 
 class AskLibraryTypeDialog(tk.Toplevel):
     """A modal dialog to ask the user to select a library type."""
-    def __init__(self, parent, title="Select Library Type"):
+    def __init__(self, parent, available_types, title="Select Library Type"):
         super().__init__(parent)
         self.transient(parent)
         self.title(title)
         self.result = None
         self.parent = parent
 
-        # Center the dialog over the parent window
         parent_x = parent.winfo_toplevel().winfo_x()
         parent_y = parent.winfo_toplevel().winfo_y()
         parent_width = parent.winfo_toplevel().winfo_width()
@@ -38,11 +37,11 @@ class AskLibraryTypeDialog(tk.Toplevel):
         combobox = ttk.Combobox(
             main_frame, 
             textvariable=self.type_var, 
-            values=["Tracks", "Sounds", "Suits"],
+            values=available_types,
             state="readonly"
         )
         combobox.pack(pady=5, fill=tk.X, expand=True)
-        combobox.set("Tracks") # Default selection
+        combobox.set("Tracks") 
 
         btn_frame = ttk.Frame(main_frame)
         btn_frame.pack(pady=(15, 0), fill=tk.X, expand=True)
@@ -54,7 +53,7 @@ class AskLibraryTypeDialog(tk.Toplevel):
         cancel_button.pack(side=tk.RIGHT)
 
         self.protocol("WM_DELETE_WINDOW", self.on_cancel)
-        self.wait_window(self) # Wait until the dialog is closed
+        self.wait_window(self)
 
     def on_ok(self):
         self.result = self.type_var.get()
@@ -73,7 +72,6 @@ class SettingsFrame(ttk.Frame):
         self.bold_font = font.Font(family="Helvetica", size=12, weight="bold")
         self.header_photo = None
         
-        # --- Create a scrollable area ---
         self.canvas = tk.Canvas(self, highlightthickness=0)
         style = self.controller.style
         bg_color = style.lookup('TFrame', 'background')
@@ -90,34 +88,22 @@ class SettingsFrame(ttk.Frame):
         self.canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
         
-        # --- Bind events ---
         self.canvas.bind('<Configure>', self.on_canvas_configure)
-        # Mouse wheel binding is now handled more intelligently at the end of build_ui()
 
     def on_canvas_configure(self, event):
-        # This ensures the inner frame resizes horizontally with the canvas.
         self.canvas.itemconfig(self.frame_id, width=event.width)
 
     def _on_mousewheel(self, event):
-        # This function scrolls the main canvas. It's only bound to widgets
-        # that shouldn't scroll themselves (e.g., labels, frames).
         self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _bind_recursive(self, widget, event, callback):
-        # Bind the event to the widget itself
         widget.bind(event, callback)
-        # Recursively bind to all children
         for child in widget.winfo_children():
-            # CRITICAL: If a child widget has its own scrolling (like Listbox),
-            # we skip it to let its default scroll behavior work.
             if isinstance(child, (tk.Listbox, tk.Text, ttk.ScrolledText)):
-                continue  # Let this widget scroll itself
-            
-            # For all other widgets, bind them to scroll the parent canvas.
+                continue 
             self._bind_recursive(child, event, callback)
         
     def build_ui(self):
-        # Clear previous widgets before rebuilding
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()
             
@@ -138,7 +124,6 @@ class SettingsFrame(ttk.Frame):
 
         self.build_library_manager()
 
-        # Define the desired order of settings within the Game Configuration category
         game_config_order = [
             "Game Package Name",
             "Mods Subfolder Path",
@@ -146,7 +131,6 @@ class SettingsFrame(ttk.Frame):
             "Game Activity Name"
         ]
 
-        # Sort categories to ensure a consistent order, putting Game Configuration first
         sorted_categories = sorted(
             self.controller.setting_vars.keys(),
             key=lambda x: (x != "Game Configuration", x)
@@ -193,7 +177,6 @@ class SettingsFrame(ttk.Frame):
                 row += 2
             cat_frame.grid_columnconfigure(0, weight=1)
 
-        # --- Theme Selector ---
         theme_frame = ttk.Labelframe(self.scrollable_frame, text="Appearance", padding=15)
         theme_frame.pack(padx=0, pady=(10, 0), fill='x')
         
@@ -214,14 +197,13 @@ class SettingsFrame(ttk.Frame):
 
         theme_selector.bind("<<ComboboxSelected>>", change_theme)
 
-        # --- FINAL STEP: Bind mouse wheel scrolling after all widgets are created ---
         self._bind_recursive(self.scrollable_frame, "<MouseWheel>", self._on_mousewheel)
 
 
     def build_library_manager(self):
         lib_frame = ttk.Labelframe(self.scrollable_frame, text="Local Mod Library", padding=15)
         lib_frame.pack(padx=0, pady=10, fill='x')
-        ttk.Label(lib_frame, text="Configure folders on your PC that contain your mod source folders.").pack(anchor='w')
+        ttk.Label(lib_frame, text="Configure folders on your PC that contain your mod source files.").pack(anchor='w')
         list_frame = ttk.Frame(lib_frame)
         list_frame.pack(fill='x', expand=True, pady=5)
 
@@ -252,7 +234,8 @@ class SettingsFrame(ttk.Frame):
             messagebox.showinfo("Duplicate", "That folder is already in the library.")
             return
 
-        dialog = AskLibraryTypeDialog(self)
+        all_types = self.controller.get_available_library_types()
+        dialog = AskLibraryTypeDialog(self, available_types=all_types)
         lib_type = dialog.result
 
         if lib_type:
@@ -282,18 +265,19 @@ class SettingsFrame(ttk.Frame):
         current_text = self.library_listbox.get(index)
         
         match = re.match(r"\[(.*?)\] (.*)", current_text)
-        if not match: return # Should not happen with current format
+        if not match: return 
 
         old_type, path = match.groups()
 
-        dialog = AskLibraryTypeDialog(self)
+        all_types = self.controller.get_available_library_types()
+        dialog = AskLibraryTypeDialog(self, available_types=all_types)
         new_type = dialog.result
 
         if new_type and new_type != old_type:
             new_text = f"[{new_type}] {path}"
             self.library_listbox.delete(index)
             self.library_listbox.insert(index, new_text)
-            self.library_listbox.selection_set(index) # Keep it selected
+            self.library_listbox.selection_set(index) 
             self.save_library_changes()
 
     def save_library_changes(self):
@@ -311,4 +295,8 @@ class SettingsFrame(ttk.Frame):
         filename = filedialog.askopenfilename(title="Select File", filetypes=[("All files", "*.*")])
         if filename:
             var_to_set.set(filename)
-            self.con
+
+    def browse_folder(self, var_to_set):
+        foldername = filedialog.askdirectory(title="Select Folder")
+        if foldername:
+            var_to_set.set(foldername)

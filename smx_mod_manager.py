@@ -106,6 +106,9 @@ class App(ttk.Window):
 
         self.github_handler = GitHubHandler()
         self.extensions = {}
+        # --- NEW: Dynamic list of library types and a registry for custom scanners ---
+        self.library_types = ["Tracks", "Sounds", "Suits"]
+        self.custom_library_scanners = {}
         self.setting_vars = {}
         self.saved_config = {}
         self.mod_mappings = {}
@@ -180,8 +183,6 @@ class App(ttk.Window):
         monitor_thread = threading.Thread(target=self._connection_monitoring_loop, daemon=True)
         monitor_thread.start()
 
-    # --- THE FIX IS HERE ---
-    # Moved get_script_directory INSIDE the App class to make it a method.
     def get_script_directory(self):
         """Gets the directory of the running script or frozen executable."""
         if getattr(sys, 'frozen', False):
@@ -235,8 +236,28 @@ class App(ttk.Window):
         self.frames[name] = frame
         frame.grid(row=0, column=0, sticky="nsew")
         print(f"  -> Extension '{name}' successfully added a UI tab.")
+        
+    def register_library_scanner(self, library_type_name, scanner_function):
+        """
+        API for an extension to register a new type of library and provide
+        the function to scan its contents.
+        
+        :param library_type_name: The name for the new library type (e.g., "Suits (Unity Project)").
+        :param scanner_function: The function to call when scanning a library of this type.
+                                This function must accept a 'base_path' string argument
+                                and return a dictionary in the standard local_data format.
+        """
+        if library_type_name in self.library_types:
+            print(f"WARNING: Library type '{library_type_name}' is already registered. Overwriting.")
+        else:
+            self.library_types.append(library_type_name)
+        
+        self.custom_library_scanners[library_type_name] = scanner_function
+        print(f"  -> Extension registered a custom library scanner for type: '{library_type_name}'")
 
-    # --- NEW METHODS: API for extensions to manage their settings ---
+    def get_available_library_types(self):
+        """Returns the list of all registered library types, including from extensions."""
+        return sorted(self.library_types)
 
     def _load_extension_settings(self):
         """Loads the settings for all extensions from a dedicated JSON file."""
@@ -270,7 +291,6 @@ class App(ttk.Window):
         
         self.extension_settings[extension_name][setting_key] = value
         
-        # Save immediately to ensure data persistence
         with open(EXTENSIONS_SETTINGS_FILE, 'w') as f:
             json.dump(self.extension_settings, f, indent=4)
         
@@ -314,7 +334,7 @@ class App(ttk.Window):
             self.save_config()
 
     def find_adb_path(self):
-        local_adb_path = os.path.join(self.get_script_directory(), "bin", "adb.exe") # Now calls the method
+        local_adb_path = os.path.join(self.get_script_directory(), "bin", "adb.exe")
         if os.path.exists(local_adb_path):
             return local_adb_path
 
@@ -390,7 +410,8 @@ class App(ttk.Window):
             self.clear_device_data()
 
         self.frames["Mod Manager"].update_control_state()
-        self.frames["On Device"].update_control_state()
+        if "On Device" in self.frames: # Defensive check
+            self.frames["On Device"].update_control_state()
 
     def clear_device_data(self):
         if self.device_has_been_scanned:
@@ -398,7 +419,8 @@ class App(ttk.Window):
             self.data_manager.unmanaged_device_data = []
             self.device_has_been_scanned = False
             self.frames["Mod Manager"].build_nav(self.data_manager)
-            self.frames["On Device"].update_mod_list()
+            if "On Device" in self.frames:
+                self.frames["On Device"].update_mod_list()
 
     def initial_local_scan(self):
         self.show_loading_overlay("Scanning Local Files...")
@@ -412,7 +434,8 @@ class App(ttk.Window):
         try:
             self.data_manager.refresh_all(scan_device=False)
             self.after(0, self.frames["Mod Manager"].build_nav, self.data_manager)
-            self.after(0, self.frames["On Device"].update_mod_list)
+            if "On Device" in self.frames:
+                self.after(0, self.frames["On Device"].update_mod_list)
         except Exception as e:
             self.log_to_ui(f"Error during initial scan: {e}")
         finally:
@@ -430,18 +453,14 @@ class App(ttk.Window):
         try:
             self.data_manager.refresh_all(scan_device=True)
             self.after(0, self.frames["Mod Manager"].build_nav, self.data_manager)
-            self.after(0, self.frames["On Device"].update_mod_list)
+            if "On Device" in self.frames:
+                self.after(0, self.frames["On Device"].update_mod_list)
         except Exception as e:
             self.log_to_ui(f"Error during refresh: {e}")
         finally:
             self.after(100, self.hide_loading_overlay)
 
     def _update_ui_after_mod_operation(self, local_paths, new_status):
-        """
-        Updates the internal data and redraws ONLY the UI for specific mods after an operation.
-        This avoids a full rescan and scroll reset.
-        """
-        # 1. Update the underlying data model (this is important)
         for path in local_paths:
             mod_found = False
             for lib, cats in self.data_manager.local_data.items():
@@ -454,16 +473,13 @@ class App(ttk.Window):
                     if mod_found: break
                 if mod_found: break
 
-        # 2. Find and update the specific widgets in the UI
         mod_manager_frame = self.frames["Mod Manager"]
         mod_list_view = mod_manager_frame.local_mods_frame
         
         for widget in mod_list_view.scrollable_frame.winfo_children():
             if hasattr(widget, 'mod_data') and widget.mod_data.get('full_path') in local_paths:
-                # Tell the specific widget to update its status and buttons
                 widget.update_ui_for_status(new_status)
         
-        # 3. Ensure the state of the newly created buttons is correct (enabled/disabled)
         mod_manager_frame.update_control_state()
 
     def install_mods(self, local_paths, library, category):
@@ -658,11 +674,8 @@ class App(ttk.Window):
     def restart_app(self):
         """Restarts the current application."""
         print("INFO: Application restart requested.")
-        self.on_closing() # Perform normal cleanup
+        self.on_closing() 
         
-        # Relaunch the application
-        # sys.executable is the path to the python interpreter or the frozen .exe
-        # sys.argv[0] is the path to the script that was originally run
         os.execv(sys.executable, ['python'] + [sys.argv[0]])
 
 if __name__ == "__main__":
