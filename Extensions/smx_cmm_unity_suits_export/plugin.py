@@ -4,9 +4,7 @@ from tkinter import filedialog, messagebox
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 import os
-import zipfile
 import shutil
-import tempfile
 
 
 class CMMUnitySuitsExportFrame(ttk.Frame):
@@ -33,7 +31,7 @@ class CMMUnitySuitsExportFrame(ttk.Frame):
         main_frame.pack(expand=True, fill=BOTH, padx=10, pady=10)
 
         ttk.Label(main_frame, text=self.extension_name, font=("Helvetica", 16, "bold")).pack(pady=(0,10), anchor='w')
-        ttk.Label(main_frame, text="Scan a Unity project folder for zipped suit mods and export them to your library.", wraplength=800).pack(pady=(0, 20), anchor='w')
+        ttk.Label(main_frame, text="Scan a Unity project folder for zipped suit mods and exports them to your library.", wraplength=800).pack(pady=(0, 20), anchor='w')
 
         # --- 1. Settings UI ---
         settings_frame = ttk.Labelframe(main_frame, text="Settings", padding=15)
@@ -145,7 +143,7 @@ class CMMUnitySuitsExportFrame(ttk.Frame):
         self.export_button.config(state='normal' if count > 0 else 'disabled')
 
     def export_selected_mods(self):
-        """Extracts the selected zipped mods into the chosen destination library, handling nested folders."""
+        """Copies the selected zipped mods directly into the chosen destination library."""
         selected_indices = self.results_listbox.curselection()
         if not selected_indices:
             messagebox.showwarning("No Selection", "Please select one or more mods from the list to export.")
@@ -171,58 +169,32 @@ class CMMUnitySuitsExportFrame(ttk.Frame):
             key = self.results_listbox.get(i)
             mod_info = self.found_mods.get(key)
             
-            if not mod_info or not mod_info['zip_path']:
-                skipped_count += 1
-                continue
-
-            temp_dir = None
             try:
+                if not mod_info or not mod_info['zip_path']:
+                    skipped_count += 1
+                    continue
+
                 # 1. Define final destination paths
                 category_folder_path = os.path.join(dest_lib_path, f"c_{mod_info['category']}")
                 os.makedirs(category_folder_path, exist_ok=True)
-                final_mod_path = os.path.join(category_folder_path, mod_info['mod_name'])
+                
+                final_zip_path = os.path.join(category_folder_path, f"{mod_info['mod_name']}.zip")
 
-                # 2. Create a secure temporary directory for extraction
-                temp_dir = tempfile.mkdtemp()
-                
-                # 3. Extract the entire zip to the temporary directory
-                with zipfile.ZipFile(mod_info['zip_path'], 'r') as zip_ref:
-                    zip_ref.extractall(temp_dir)
-                
-                # 4. Inspect contents to find the correct source for moving
-                extracted_items = os.listdir(temp_dir)
-                source_for_move = temp_dir
-                
-                if len(extracted_items) == 1 and os.path.isdir(os.path.join(temp_dir, extracted_items[0])):
-                    source_for_move = os.path.join(temp_dir, extracted_items[0])
-                    # Move all contents from the subfolder up one level
-                    for item_name in os.listdir(source_for_move):
-                        shutil.move(os.path.join(source_for_move, item_name), temp_dir)
-                    # Remove the now-empty subfolder
-                    os.rmdir(source_for_move)
-
-                # 5. Clean up final destination and move the prepared files
-                if os.path.exists(final_mod_path):
-                    shutil.rmtree(final_mod_path)
-                
-                shutil.move(temp_dir, final_mod_path)
-                temp_dir = None # Set to None to prevent double deletion in finally block
+                # 2. Copy the source zip file to the final destination, overwriting if it exists
+                shutil.copy(mod_info['zip_path'], final_zip_path)
                 
                 exported_count += 1
 
             except Exception as e:
-                print(f"ERROR exporting {mod_info['mod_name']}: {e}")
-                messagebox.showerror("Export Error", f"An error occurred while exporting {mod_info['mod_name']}:\n\n{e}")
-                break
-            finally:
-                # 6. Always clean up the temporary directory if it still exists
-                if temp_dir and os.path.exists(temp_dir):
-                    shutil.rmtree(temp_dir)
+                print(f"ERROR exporting {mod_info.get('mod_name', 'Unknown')}: {e}")
+                messagebox.showerror("Export Error", f"An error occurred while exporting {mod_info.get('mod_name', 'Unknown')}:\n\n{e}")
+                break # Stop the process on the first error
 
         self.controller.hide_loading_overlay()
         messagebox.showinfo("Export Complete", f"Successfully exported {exported_count} mod(s).\nSkipped {skipped_count} mod(s) (no zip found).")
         
-        self.controller.refresh_local_data_and_ui()
+        if exported_count > 0:
+            self.controller.refresh_local_data_and_ui()
 
 
 class SMXExtension:
@@ -230,7 +202,7 @@ class SMXExtension:
     def __init__(self):
         self.name = "SMX CMM Unity Suits Export"
         self.description = "Scans a Unity project folder for zipped suit mods and exports them to your library."
-        self.version = "1.2.0" # Version bumped for new unzipping logic
+        self.version = "1.2.0" 
 
     def initialize(self, app):
         """Called by the main application to let the extension integrate itself."""
