@@ -132,7 +132,7 @@ Let's see a "default Library" structure:
 5.  Select the mod(s) you want to install. You can **Ctrl+Click** to select multiple.
 6.  Click the **"Install/Update Selected"** button. The log at the bottom will show the progress.
 
-*The "Mod Helper" tab in the application contains a detailed guide to all features.*
+*The "Mod Helper" extension in the application contains a guide.*
 
 
 ## 🤔 Frequently Asked Questions (FAQ)

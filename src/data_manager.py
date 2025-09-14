@@ -4,6 +4,7 @@ import re
 from tkinter import messagebox
 import zipfile
 import hashlib
+from pathlib import Path
 
 CATEGORY_PREFIX = "c_"
 REQUIRED_SOUNDS = ["engine.wav", "high.wav", "idle.wav", "low.wav"]
@@ -41,10 +42,8 @@ class DataManager:
         return all_local_data
 
     def _scan_single_library(self, base_path, lib_type):
-        # --- MODIFIED: Check for a custom scanner provided by an extension first ---
         custom_scanners = self.controller.custom_library_scanners
         if lib_type in custom_scanners:
-            # This library type is handled by an extension. Call its registered function.
             scanner_func = custom_scanners[lib_type]
             try:
                 self.controller.log_to_ui(f"INFO: Using custom scanner for library type '{lib_type}'")
@@ -53,13 +52,11 @@ class DataManager:
                 self.controller.log_to_ui(f"ERROR: Custom scanner for '{lib_type}' failed: {e}")
                 return {}
 
-        # --- EXISTING LOGIC: Fallback for built-in types (Tracks, Sounds, Suits) ---
         library_data = {}
         uncategorized_mods = []
         try:
             for item_name in os.listdir(base_path):
                 item_path = os.path.join(base_path, item_name)
-                # Scan for category folders (c_...) containing zips
                 if item_name.lower().startswith(CATEGORY_PREFIX) and os.path.isdir(item_path):
                     cat_name = item_name[len(CATEGORY_PREFIX):]
                     if cat_name not in library_data: library_data[cat_name] = []
@@ -68,7 +65,6 @@ class DataManager:
                             mod_zip_path = os.path.join(item_path, mod_zip_name)
                             details = self.get_local_mod_details_from_zip(mod_zip_path, lib_type)
                             if details: library_data[cat_name].append(details)
-                # Scan for uncategorized zip files in the root
                 elif item_name.lower().endswith('.zip') and os.path.isfile(item_path):
                     details = self.get_local_mod_details_from_zip(item_path, lib_type)
                     if details: uncategorized_mods.append(details)
@@ -84,12 +80,12 @@ class DataManager:
     def get_local_mod_details_from_zip(self, mod_zip_path, lib_type):
         """
         Public helper that reads a .zip file and returns a dictionary of mod details.
-        Can be called by the core app or by extensions.
+        No longer inspects internal folder names for matching.
         """
         try:
             if not zipfile.is_zipfile(mod_zip_path): return None
 
-            mod_name = os.path.basename(mod_zip_path)[:-4] # Remove .zip
+            mod_name = os.path.basename(mod_zip_path)[:-4]
             
             with zipfile.ZipFile(mod_zip_path, 'r') as zip_ref:
                 namelist = zip_ref.namelist()
@@ -99,8 +95,13 @@ class DataManager:
                 status = "Installed" if mod_zip_path in self.controller.mod_mappings else "Not Installed"
                 
                 mod_details = { 
-                    "name": mod_name, "full_path": mod_zip_path, "file_count": len(namelist), 
-                    "preview_path": None, "icon_path": None, "status": status, "library_type": lib_type
+                    "name": mod_name, 
+                    "full_path": mod_zip_path, 
+                    "file_count": len(namelist), 
+                    "preview_path": None, 
+                    "icon_path": None, 
+                    "status": status, 
+                    "library_type": lib_type
                 }
 
                 def extract_and_get_path(zip_member_path):
@@ -172,16 +173,19 @@ class DataManager:
     def _build_managed_device_data(self):
         libraries = {}
         for local_zip_path, mapping_info in self.controller.mod_mappings.items():
-            parent_dir = os.path.dirname(local_zip_path)
-            grandparent_dir = os.path.dirname(parent_dir)
-            lib_root_path = grandparent_dir if os.path.basename(parent_dir).lower().startswith(CATEGORY_PREFIX) else parent_dir
-            
-            lib_definitions = self.controller.get_local_library_paths()
-            lib_type = 'Unknown'
-            for lib in lib_definitions:
-                if lib['path'] == lib_root_path:
-                    lib_type = lib.get('type', 'Unknown')
+            lib_root_path = None
+            path_iterator = Path(local_zip_path)
+            for lib in self.controller.get_local_library_paths():
+                if Path(lib['path']) in path_iterator.parents:
+                    lib_root_path = lib['path']
                     break
+            
+            lib_type = 'Unknown'
+            if lib_root_path:
+                for lib in self.controller.get_local_library_paths():
+                    if lib['path'] == lib_root_path:
+                        lib_type = lib.get('type', 'Unknown')
+                        break
             
             mod_details = self.get_local_mod_details_from_zip(local_zip_path, lib_type)
             
@@ -209,12 +213,9 @@ class DataManager:
         files_on_device = {f.lower(): f for f in device_files} if device_files else {}
         
         mod_type = "Unknown"
-        if any(f.lower().endswith(".smxlevel") for f in files_on_device):
-            mod_type = "Tracks"
-        elif REQUIRED_SUIT_FILES["gear"].lower() in files_on_device:
-            mod_type = "Suits"
-        elif any(f.lower().endswith(".wav") for f in files_on_device):
-            mod_type = "Sounds"
+        if any(f.lower().endswith(".smxlevel") for f in files_on_device): mod_type = "Tracks"
+        elif REQUIRED_SUIT_FILES["gear"].lower() in files_on_device: mod_type = "Suits"
+        elif any(f.lower().endswith(".wav") for f in files_on_device): mod_type = "Sounds"
 
         mod_data = { 'name': actual_mod_folder_name, 'device_folder': folder_name, 'mod_type': mod_type }
         
@@ -228,17 +229,14 @@ class DataManager:
                 if filename.lower() in files_on_device:
                     device_path = f"{device_mod_path}/{files_on_device[filename.lower()]}"
                     local_path = os.path.join(self.controller.TEMP_ICON_DIR, f"unmanaged_{safe_mod_name}_{key}.png")
-                    if self.controller.adb.pull_file(device_path, local_path):
-                        suit_files[key] = local_path
-                else:
-                    suit_files[key] = None
+                    if self.controller.adb.pull_file(device_path, local_path): suit_files[key] = local_path
+                else: suit_files[key] = None
             mod_data['suit_files'] = suit_files
         
-        preview_name = "preview.jpg" if "preview.jpg" in files_on_device else "preview.png" if "preview.png" in files_on_device else None
+        preview_name = next((f for f in ["preview.jpg", "preview.png"] if f in files_on_device), None)
         if preview_name:
             device_path = f"{device_mod_path}/{preview_name}"
             local_path = os.path.join(self.controller.TEMP_ICON_DIR, f"unmanaged_{safe_mod_name}_preview.jpg")
-            if self.controller.adb.pull_file(device_path, local_path):
-                mod_data['preview_path'] = local_path
+            if self.controller.adb.pull_file(device_path, local_path): mod_data['preview_path'] = local_path
 
         return mod_data

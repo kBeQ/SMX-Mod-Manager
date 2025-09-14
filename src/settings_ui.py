@@ -8,7 +8,6 @@ from PIL import Image, ImageTk
 import re
 
 class AskLibraryTypeDialog(tk.Toplevel):
-    """A modal dialog to ask the user to select a library type."""
     def __init__(self, parent, available_types, title="Select Library Type"):
         super().__init__(parent)
         self.transient(parent)
@@ -124,17 +123,8 @@ class SettingsFrame(ttk.Frame):
 
         self.build_library_manager()
 
-        game_config_order = [
-            "Game Package Name",
-            "Mods Subfolder Path",
-            "Full Mods Path (Auto-generated)",
-            "Game Activity Name"
-        ]
-
-        sorted_categories = sorted(
-            self.controller.setting_vars.keys(),
-            key=lambda x: (x != "Game Configuration", x)
-        )
+        game_config_order = ["Game Package Name", "Mods Subfolder Path", "Full Mods Path (Auto-generated)", "Game Activity Name"]
+        sorted_categories = sorted(self.controller.setting_vars.keys(), key=lambda x: (x != "Game Configuration", x))
 
         for category in sorted_categories:
             settings = self.controller.setting_vars[category]
@@ -162,16 +152,13 @@ class SettingsFrame(ttk.Frame):
                 
                 if details.get('readonly'):
                     entry.config(state='readonly')
-                
                 entry.grid(row=row + 1, column=0, columnspan=2, sticky='ew')
                 
                 if details.get('type') == 'file':
-                    browse_button = ttk.Button(cat_frame, text="Browse...", bootstyle="outline",
-                                              command=lambda var=details['var']: self.browse_file(var))
+                    browse_button = ttk.Button(cat_frame, text="Browse...", bootstyle="outline", command=lambda var=details['var']: self.browse_file(var))
                     browse_button.grid(row=row + 1, column=2, padx=5)
                 elif details.get('type') == 'folder':
-                    browse_button = ttk.Button(cat_frame, text="Browse...", bootstyle="outline",
-                                              command=lambda var=details['var']: self.browse_folder(var))
+                    browse_button = ttk.Button(cat_frame, text="Browse...", bootstyle="outline", command=lambda var=details['var']: self.browse_folder(var))
                     browse_button.grid(row=row + 1, column=2, padx=5)
 
                 row += 2
@@ -179,13 +166,8 @@ class SettingsFrame(ttk.Frame):
 
         theme_frame = ttk.Labelframe(self.scrollable_frame, text="Appearance", padding=15)
         theme_frame.pack(padx=0, pady=(10, 0), fill='x')
-        
         ttk.Label(theme_frame, text="Theme:").pack(side='left', padx=(0,10))
-        
-        theme_selector = ttk.Combobox(
-            master=theme_frame, 
-            values=self.controller.style.theme_names()
-        )
+        theme_selector = ttk.Combobox(master=theme_frame, values=self.controller.style.theme_names())
         theme_selector.pack(side='left', fill='x', expand=True)
         theme_selector.set(self.controller.style.theme_use())
 
@@ -194,7 +176,6 @@ class SettingsFrame(ttk.Frame):
             self.controller.style.theme_use(selected_theme)
             self.controller.saved_config['theme'] = selected_theme
             self.controller.save_config()
-
         theme_selector.bind("<<ComboboxSelected>>", change_theme)
 
         self._bind_recursive(self.scrollable_frame, "<MouseWheel>", self._on_mousewheel)
@@ -223,11 +204,13 @@ class SettingsFrame(ttk.Frame):
         ttk.Button(btn_frame, text="Add Folder...", command=self.add_library_folder, bootstyle="outline").pack(side='left')
         ttk.Button(btn_frame, text="Change Type...", command=self.change_library_type, bootstyle="outline").pack(side='left', padx=5)
         ttk.Button(btn_frame, text="Remove Selected", command=self.remove_library_folder, bootstyle="outline-danger").pack(side='left')
+        
+        # --- NEW: Add the Sync Mappings button to the right side ---
+        ttk.Button(btn_frame, text="Sync Mappings", command=self.controller.sync_mod_mappings, bootstyle="outline-info").pack(side='right')
 
     def add_library_folder(self):
         folder = filedialog.askdirectory(title="Select a folder containing mods")
-        if not folder:
-            return
+        if not folder: return
 
         current_libs = self.controller.get_local_library_paths()
         if any(lib.get('path') == folder for lib in current_libs):
