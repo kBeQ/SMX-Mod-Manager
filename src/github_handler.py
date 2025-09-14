@@ -6,8 +6,8 @@ import os
 
 # --- Configuration ---
 # This points to your repository.
-GITHUB_REPO_OWNER = "kbeq"  # Replace with your GitHub username
-GITHUB_REPO_NAME = "SMX-Mod-Manager" # Replace with your repo name
+GITHUB_REPO_OWNER = "kbeq"
+GITHUB_REPO_NAME = "SMX-Mod-Manager"
 EXTENSIONS_PATH_IN_REPO = "Extensions"
 API_BASE_URL = f"https://api.github.com/repos/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/contents/"
 
