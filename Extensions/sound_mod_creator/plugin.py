@@ -3,6 +3,8 @@ import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import filedialog, font
+# --- FIX 1: ADD THIS MISSING IMPORT ---
+from ttkbootstrap.scrolled import ScrolledFrame
 
 # --- The UI Class is now in the same file ---
 class SoundModCreatorFrame(ttk.Frame):
@@ -20,7 +22,8 @@ class SoundModCreatorFrame(ttk.Frame):
         self.build_ui()
 
     def build_ui(self):
-        scrollable_frame = ttk.ScrolledFrame(self, autohide=True, padding=20)
+        # --- FIX 2: CHANGE `ttk.ScrolledFrame` TO JUST `ScrolledFrame` ---
+        scrollable_frame = ScrolledFrame(self, autohide=True, padding=20)
         scrollable_frame.pack(fill=BOTH, expand=True)
 
         settings_frame = ttk.Labelframe(scrollable_frame, text="Configuration", padding=15)
@@ -70,7 +73,6 @@ class SMXExtension:
         print(f"INFO: Initializing extension '{self.name}' v{self.version}")
         self.app = app
         
-        # This now works because SoundModCreatorFrame is defined above
         self.app.add_extension_tab(self.name, SoundModCreatorFrame)
 
     def on_close(self):

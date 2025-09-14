@@ -457,6 +457,7 @@ class App(ttk.Window):
         if page_name in self.frames:
             frame = self.frames[page_name]
             if page_name == "Settings": frame.build_ui()
+            if page_name == "Extensions": frame.populate_installed_list()
             frame.tkraise()
             for name, btn in self.nav_buttons.items():
                 btn.config(bootstyle="primary" if name == page_name else "secondary")
