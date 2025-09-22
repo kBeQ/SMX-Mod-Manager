@@ -60,28 +60,21 @@ class ModHelperFrame(ttk.Frame):
         self.create_section_text(mm_content, "This is the primary screen for managing the collection of mods stored on your computer. To get started, you need to set up your local mod folders correctly.")
         
         self.create_section_header(mm_content, "Recommended Folder Structure")
-        self.create_section_text(mm_content, "Below is a visual guide. Go to the 'Settings' tab to add your main library folder (e.g., 'My SMX Mods'). Inside that folder, create subfolders for each mod type. For further organization, you can use category folders with a `c_` prefix.")
+        self.create_section_text(mm_content, "Go to the 'Settings' tab to add your main library folder (e.g., 'My SMX Mods'). Inside that library, you should organize your mods into subfolders. For further organization, you can use category folders with a `c_` prefix. The manager scans for `.zip` files containing your mods.")
         self.create_treeview_example(mm_content)
         
         self.create_section_header(mm_content, "Install, Update & Uninstall")
-        self.create_section_text(mm_content, "Select one or more mods by clicking on them (use Ctrl+Click to select multiple). Then use the buttons in the 'Controls' panel on the left to install or uninstall them. The game must be running in the emulator for these actions to work.")
-        
-        od_content = self.create_collapsible_pane(self.scrollable_frame, "② The On Device Tab")
-        self.create_section_header(od_content, "See What's on the Emulator")
-        self.create_section_text(od_content, "This tab shows you mods that are currently on the device but are not being tracked by this tool (e.g., mods you copied manually).")
-        
-        self.create_section_header(od_content, "Unmanaged Mods")
-        self.create_section_text(od_content, "If you manually copied mods to your device in the past, they will appear here as 'Unmanaged'. This tool can't automatically update them, but it provides an easy way to delete them if you want to replace them with a managed version from the Mod Manager tab.")
+        self.create_section_text(mm_content, "Select one or more mods by clicking on them (use Ctrl+Click to select multiple). Then use the buttons in the 'Controls' panel on the left to install or uninstall them. If a mod is already installed, the 'Install' button will update it. The emulator must be connected for these actions to work.")
 
-        self.create_section_header(od_content, "Filter & Delete")
-        self.create_section_text(od_content, "You can filter the list by mod type. To clean up, select one or more unmanaged mods and click 'Delete Selected'. This action permanently removes the mod from the device and cannot be undone.")
-        
-        s_content = self.create_collapsible_pane(self.scrollable_frame, "③ The Settings Tab")
+        self.create_section_header(mm_content, "Sync Mappings with Device")
+        self.create_section_text(mm_content, "This is a powerful recovery tool. If your mappings file gets deleted or you manually add mods and want the manager to track them, this button will scan the device. It then tries to match the mods it finds with the local `.zip` files in your library based on their filenames. This will overwrite your existing mappings.")
+
+        s_content = self.create_collapsible_pane(self.scrollable_frame, "② The Settings Tab")
         self.create_section_header(s_content, "Configure the Tool")
         self.create_section_text(s_content, "This is where you set up the application to work with your specific mod folders and game configuration.")
         
         self.create_section_header(s_content, "Local Mod Library")
-        self.create_section_text(s_content, "This is the most important setting. Click 'Add Folder...' to tell the manager where your mods are stored on your PC. You can add multiple library folders. For each folder, you must specify if it contains Tracks, Sounds, or Suits.")
+        self.create_section_text(s_content, "This is the most important setting. Click 'Add Folder...' to tell the manager where your mods are stored on your PC. You can add multiple library folders. For each folder, you must specify what type of mod it contains (e.g., Tracks, Sounds, or Suits).")
 
         self.create_section_header(s_content, "Game Configuration")
         self.create_section_text(s_content, "These settings tell the tool how to find your game on the emulator. For most users, the default values should work perfectly fine and do not need to be changed.")
@@ -126,9 +119,9 @@ class ModHelperFrame(ttk.Frame):
         tree.insert(lib_root, "end", text=" 📁 Suits")
         cat_1 = tree.insert(tracks_folder, "end", text=" 📁 c_Supermoto (Category)")
         cat_2 = tree.insert(tracks_folder, "end", text=" 📁 c_Enduro (Category)")
-        tree.insert(cat_1, "end", text=" └─ 📁 My Awesome Track (Mod Folder)")
-        tree.insert(tracks_folder, "end", text=" 📁 Uncategorized Track 1 (Mod Folder)")
-        tree.insert(tracks_folder, "end", text=" 📁 Uncategorized Track 2 (Mod Folder)")
+        tree.insert(cat_1, "end", text=" └─ 📄 My Awesome Track.zip (Mod File)")
+        tree.insert(tracks_folder, "end", text=" 📄 Uncategorized Track 1.zip (Mod File)")
+        tree.insert(tracks_folder, "end", text=" 📄 Uncategorized Track 2.zip (Mod File)")
 
         tree.bind("<<TreeviewSelect>>", lambda e: "break")
 

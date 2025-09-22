@@ -43,6 +43,7 @@ class DataManager:
             all_local_data[lib_name] = self._scan_single_library(lib_path, lib_type)
         return all_local_data
 
+    # --- MODIFIED: This function now handles [Sound] libraries differently ---
     def _scan_single_library(self, base_path, lib_type):
         custom_scanners = self.controller.custom_library_scanners
         if lib_type in custom_scanners:
@@ -57,24 +58,52 @@ class DataManager:
         library_data = {}
         uncategorized_mods = []
         try:
-            for item_name in os.listdir(base_path):
-                item_path = os.path.join(base_path, item_name)
-                if item_name.lower().startswith(CATEGORY_PREFIX) and os.path.isdir(item_path):
-                    cat_name = item_name[len(CATEGORY_PREFIX):]
-                    if cat_name not in library_data: library_data[cat_name] = []
-                    for mod_zip_name in os.listdir(item_path):
-                        if mod_zip_name.lower().endswith('.zip'):
-                            mod_zip_path = os.path.join(item_path, mod_zip_name)
-                            details = self.get_local_mod_details_from_zip(mod_zip_path, lib_type)
-                            if details: library_data[cat_name].append(details)
-                elif item_name.lower().endswith('.zip') and os.path.isfile(item_path):
-                    details = self.get_local_mod_details_from_zip(item_path, lib_type)
-                    if details: uncategorized_mods.append(details)
+            # --- NEW LOGIC FOR SOUND LIBRARIES ---
+            if lib_type == 'Sounds':
+                for item_name in os.listdir(base_path):
+                    item_path = os.path.join(base_path, item_name)
+                    # Treat any subdirectory as a potential category
+                    if os.path.isdir(item_path):
+                        cat_name = item_name
+                        mod_zips_in_folder = [
+                            f for f in os.listdir(item_path) if f.lower().endswith('.zip')
+                        ]
+                        # Only add it as a category if it contains zip files
+                        if mod_zips_in_folder:
+                            if cat_name not in library_data: library_data[cat_name] = []
+                            for mod_zip_name in mod_zips_in_folder:
+                                mod_zip_path = os.path.join(item_path, mod_zip_name)
+                                details = self.get_local_mod_details_from_zip(mod_zip_path, lib_type)
+                                if details: library_data[cat_name].append(details)
+                    # Handle .zip files in the root as uncategorized
+                    elif item_name.lower().endswith('.zip') and os.path.isfile(item_path):
+                        details = self.get_local_mod_details_from_zip(item_path, lib_type)
+                        if details: uncategorized_mods.append(details)
             
+            # --- ORIGINAL LOGIC FOR ALL OTHER STANDARD LIBRARIES ---
+            else:
+                for item_name in os.listdir(base_path):
+                    item_path = os.path.join(base_path, item_name)
+                    # Default behavior: categories must be prefixed with "c_"
+                    if item_name.lower().startswith(CATEGORY_PREFIX) and os.path.isdir(item_path):
+                        cat_name = item_name[len(CATEGORY_PREFIX):]
+                        if cat_name not in library_data: library_data[cat_name] = []
+                        for mod_zip_name in os.listdir(item_path):
+                            if mod_zip_name.lower().endswith('.zip'):
+                                mod_zip_path = os.path.join(item_path, mod_zip_name)
+                                details = self.get_local_mod_details_from_zip(mod_zip_path, lib_type)
+                                if details: library_data[cat_name].append(details)
+                    # Handle .zip files in the root as uncategorized
+                    elif item_name.lower().endswith('.zip') and os.path.isfile(item_path):
+                        details = self.get_local_mod_details_from_zip(item_path, lib_type)
+                        if details: uncategorized_mods.append(details)
+            
+            # Sort mods within each category and add uncategorized mods
             for cat_name in library_data:
                 library_data[cat_name].sort(key=lambda x: x['name'])
             if uncategorized_mods:
                 library_data['Uncategorized'] = sorted(uncategorized_mods, key=lambda x: x['name'])
+
         except Exception as e:
             self.controller.log_to_ui(f"Error reading folder {base_path}: {e}")
         return library_data
