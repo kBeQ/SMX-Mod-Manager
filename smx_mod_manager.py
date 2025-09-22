@@ -26,7 +26,7 @@ from src.github_handler import GitHubHandler
 CONFIG_FILE = "config.json"
 MAPPINGS_FILE = "mod_mappings.json"
 EXTENSIONS_SETTINGS_FILE = "extensions_settings.json" 
-APP_VERSION = "8.0.5" # Version bump for critical architecture fix
+APP_VERSION = "8.0.4" # Version bump for critical architecture fix
 
 def get_resource_path(filename):
     if getattr(sys, "frozen", False): base_dir = sys._MEIPASS
