@@ -159,7 +159,7 @@ class ModHelperFrame(ttk.Frame):
         tree.insert(sound_middleman, "end", text="    ├─ 🔊 high.wav")
         tree.insert(sound_middleman, "end", text="    ├─ 🔊 idle.wav")
         tree.insert(sound_middleman, "end", text="    ├─ 🔊 low.wav")
-        tree.insert(sound_middleman, "end", text="    └─ 🖼️ preview.png")
+        tree.insert(sound_middleman, "end", text="    └─ 🖼️ preview.jpg")
         tree.insert(sounds_folder, "end", text=" 📄 Uncategorized Y250 Sound Mod.zip")
 
         # Suits
@@ -170,7 +170,7 @@ class ModHelperFrame(ttk.Frame):
         tree.insert(suit_middleman, "end", text="    ├─ 🤵 gear_suit.png")
         tree.insert(suit_middleman, "end", text="    ├─ 🤵 gear_suit_normal.png")
         tree.insert(suit_middleman, "end", text="    ├─ 🖼️ icon.png")
-        tree.insert(suit_middleman, "end", text="    └─ 🖼️ preview.png")
+        tree.insert(suit_middleman, "end", text="    └─ 🖼️ preview.jpg")
         tree.insert(suits_folder, "end", text=" 📄 Uncategorized Suit.zip")
 
         # Tracks
@@ -179,7 +179,7 @@ class ModHelperFrame(ttk.Frame):
         track_zip = tree.insert(track_cat_1, "end", text="  📄 My First Track.zip")
         track_middleman = tree.insert(track_zip, "end", text="   📁 My Track Name")
         tree.insert(track_middleman, "end", text="    ├─ 🏁 MyTrack.smxlevel")
-        tree.insert(track_middleman, "end", text="    └─ 🖼️ preview.png")
+        tree.insert(track_middleman, "end", text="    └─ 🖼️ preview.jpg")
         tree.insert(tracks_folder, "end", text=" 📄 Uncategorized Track.zip")
         
         # --- EXPAND ALL NODES BY DEFAULT FOR FULL VISIBILITY ---

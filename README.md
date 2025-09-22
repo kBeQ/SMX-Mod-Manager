@@ -122,7 +122,7 @@ This example shows a "My SMX Mods" folder containing three libraries. Notice the
 │   │       ├── 🔊 high.wav
 │   │       ├── 🔊 idle.wav
 │   │       ├── 🔊 low.wav
-│   │       └── 🖼️ preview.png
+│   │       └── 🖼️ preview.jpg
 │   ├── 📄 GRF450 Spaceship.zip
 │   ├── 📄 Y250 Spaceship.zip
 │   ├── 📄 Y450 Spaceship.zip
@@ -138,7 +138,7 @@ This example shows a "My SMX Mods" folder containing three libraries. Notice the
 │           ├── 🤵 gear_suit.png
 │           ├── 🤵 gear_suit_normal.png
 │           ├── 🖼️ icon.png
-│           └── 🖼️ preview.png
+│           └── 🖼️ preview.jpg
 │
 └── 📄 Uncategorized Suit.zip
 ```
@@ -148,7 +148,7 @@ This example shows a "My SMX Mods" folder containing three libraries. Notice the
 │   └── 📄 My First Track.zip
 │       └── 📁 My Track Name/
 │           ├── 🏁 MyTrack.smxlevel
-│           └── 🖼️ preview.png
+│           └── 🖼️ preview.jpg
 │
 └── 📄 Uncategorized Track.zip
 ```
