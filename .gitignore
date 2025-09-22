@@ -6,6 +6,7 @@ dist/
 # User-Specific Application Files
 config.json
 mod_mappings.json
+extensions_settings.json
 
 # Python cache
 __pycache__/
