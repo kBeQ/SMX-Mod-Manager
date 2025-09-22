@@ -21,6 +21,7 @@ This tool is specifically designed for **SMX: Supermoto Vs. Motocross v8.0.2**.
 *   **Organize Your Mods:** Set up "Libraries" for your `Tracks`, `Suits`, & `Sounds`, and organize them with custom categories.
 *   **One-Click Install/Update:** Select one or more mods and push them to the emulator with a single click.
 *   **Rich Mod Previews:** The UI automatically validates mod `.zip` archives and shows previews for textures and required files.
+*   **Sync & Recover:** Re-link mods on your device to your local files using the "Sync Mappings" recovery tool.
 *   **Built-in ADB Console:** A console for power users to send custom commands directly to the emulator.
 *   **Game Launch Control:** Launch or force-stop the game directly from the tool.
 *   **Customizable Interface:** Choose from several themes to personalize your experience.
@@ -33,7 +34,7 @@ This is your main workspace. It displays all the mod `.zip` files the manager ha
 ![SMX Mod Manager Main UI](/docs/SMXMM-On%20PC.png)
 
 *   **Library & Category Navigation:** At the top, you can switch between your main libraries (`[Tracks] Tracks`, `[Suits] Suits`, etc.) and then filter by the categories you created in your folders (`Uncategorized`, `Games`, etc.).
-*   **The Controls Panel:** The panel on the left contains your main actions: Search, Quick Select buttons, and the primary Install/Uninstall buttons.
+*   **The Controls Panel:** The panel on the left contains your main actions: Search, Quick Select buttons, the **Sync Mappings** recovery tool, and the primary Install/Uninstall buttons.
 *   **The Mod Card:** Each mod is displayed on its own card, which validates critical files found inside the `.zip` archive (like `Track.smxlevel`) and provides quick action buttons.
 
 
@@ -59,12 +60,15 @@ The Mod Manager works by linking to the folders on your PC where you store your 
 
 *   Open the Mod Manager and go to the **Settings** tab.
 *   Under "Local Mod Library," click **"Add Folder..."**.
-![SMX Mod Manager Libraries](/docs/SMXMM-Libraries.png)*   Select the folder that contains your **Tracks** (e.g., a folder on your PC named `My Tracks`).
+
+![SMX Mod Manager Libraries](/docs/SMXMM-Libraries.png)*
+
+Select the folder that contains your **Tracks** (e.g., a folder on your PC named `My Tracks`).
 *   When prompted, set the library type to **'Tracks'**.
 
     ![SMX Mod Manager Libraries](/docs/SMXMM-LibraryType.png)
 
-*   **Repeat this process for your `Suits` and `Sounds` folders.**
+*   **Repeat this process for your `Suits` and `Sounds` library folders.**
 *   **Flexibility:** You can add multiple libraries of the same type. For example, if you have tracks in `C:\Downloads\Tracks` and `D:\MyMods\SupermotoTracks`, you can add both as separate 'Tracks' libraries.
 
 > ### The Golden Rule: Library vs. Mod File
@@ -84,67 +88,89 @@ The Mod Manager works by linking to the folders on your PC where you store your 
 > ```
 
 ### 2. Organizing Your Local Mods
-The manager expects a specific structure *inside* each Library folder you've added. It scans for `.zip` files.
+The manager scans for `.zip` files inside each Library folder you've added. The way you organize them depends on the mod type.
 
-*   **For Categories:** Create subfolders with a `c_` prefix (e.g., `c_4-Stroke`). Place your mod `.zip` files inside these category folders.
-*   **For Uncategorized Mods:** Place mod `.zip` files directly inside the Library folder. They will appear in the "Uncategorized" category.
+#### For Tracks and Suits (Using `c_` prefix)
+To create categories, make subfolders with a `c_` prefix.
 
-![SMX Mod Manager Libraries Categories](/docs/SMXMM-Libraries-Cat.png)
+*   **For Categories:** Create subfolders like `c_4-Stroke` or `c_Supermoto`. Place your mod `.zip` files inside them.
+*   **For Uncategorized Mods:** Place mod `.zip` files directly inside the main Library folder.
 
-**Example Structure:**
+#### For Sounds (No prefix needed)
+Sound libraries are special. **Do not use the `c_` prefix.** Any subfolder is automatically treated as a category.
+
+*   **For Categories:** Simply create a normal subfolder (e.g., `Spaceship Sounds`). Place the `.zip` file for that sound mod inside it.
+
+For more info see https://github.com/kBeQ/SMX-Sound-Creator and navigate to "Here's what you can expect on export" section and the "⚡ Seamless Workflow with SMX Mod Manager" section.
+
+#### Example Structure:
+Let's group everything together,
+This example shows a "My SMX Mods" folder containing three libraries. Notice the difference between the `Sounds` library and the others.
+
+```
+📁 My SMX Mods/
+├── 📁 Sounds/  <-- Added as a [Sounds] Library in Settings
+├── 📁 Suits/   <-- Added as a [Suits] Library in Settings
+└── 📁 Tracks/  <-- Added as a [Tracks] Library in Settings
+```
 ```
 📁 Sounds/
-├── 📁 c_4-Stroke/
-│   └── 📄 My First Sound Mod.zip
+├── 📁 Spaceship Motor Sound/
+│   ├── 📄 GRF250 Spaceship.zip
+│   │   └── 📁 GRF250/
+│   │       ├── 🔊 engine.wav
+│   │       ├── 🔊 high.wav
+│   │       ├── 🔊 idle.wav
+│   │       ├── 🔊 low.wav
+│   │       └── 🖼️ preview.png
+│   ├── 📄 GRF450 Spaceship.zip
+│   ├── 📄 Y250 Spaceship.zip
+│   ├── 📄 Y450 Spaceship.zip
+│   └── 📄 etc.zip
 │
-└── 📄 Sound 0.zip
-
+└── 📄 Uncategorized Y250 Sound Mod.zip
+```
+```
 📁 Suits/
 ├── 📁 c_Mx/
 │   └── 📄 My First Mx Suit.zip
+│       └── 📁 My Suit Name/
+│           ├── 🤵 gear_suit.png
+│           ├── 🤵 gear_suit_normal.png
+│           ├── 🖼️ icon.png
+│           └── 🖼️ preview.png
 │
-└── 📄 Suit 0.zip
-
+└── 📄 Uncategorized Suit.zip
+```
+```
 📁 Tracks/
 ├── 📁 c_Supermoto/
 │   └── 📄 My First Track.zip
+│       └── 📁 My Track Name/
+│           ├── 🏁 MyTrack.smxlevel
+│           └── 🖼️ preview.png
 │
-└── 📄 Track 0.zip
-
-________________________________________________________________________________________________________
-Let's see a "default Library" structure:
-
-📁 LibraryFolder/
-    ├── 📁 c_Category 1/
-    │   └── 📄 Categorized Mod 1.zip
-    ├── 📁 c_Category 2/
-    │   └── 📄 Categorized Mod 2.zip
-    │
-    └── 📄 Uncategorized Mod 1.zip
+└── 📄 Uncategorized Track.zip
 ```
-
 
 ### 3 . Installing Mods
 1.  Launch SMX Mod Manager.
-2.  Launch the Google Play Games Developer Emulator. The status should turn yellow.
-3.  Launch SMX. You can use the **"Launch Game"** button in the tool!
-4.  Wait for the status indicator to turn green and say "Game Running".
+2.  Launch the Google Play Games Developer Emulator. The status should turn yellow ("Emulator Connected").
+3.  Launch SMX. You can use the **"Launch Game"** button in the tool.
+4.  Wait for the status indicator to turn green ("Game Running").
 5.  Select the mod(s) you want to install. You can **Ctrl+Click** to select multiple.
 6.  Click the **"Install/Update Selected"** button. The log at the bottom will show the progress.
 
-*The "Mod Helper" extension in the application contains a guide.*
+For a more detailed walkthrough, see the **"Mod Helper"** tab inside the application.
 
 
 ## 🤔 Frequently Asked Questions (FAQ)
 
-**Q: I've seen official guides that mention creating a `mod_0_...` folder. Do I need to do that?**
-**A:** No, you don't! The tool handles this for you automatically.
+**Q: I've seen guides that mention creating a `mod_0_...` folder. Do I need to do that?**
+**A:** No, you don't! The tool handles this for you automatically. When you install a mod from a `.zip` file, the tool unzips it, creates the correctly named `mod_i_...` folder on your device, and saves a link in its `mod_mappings.json` file. This mapping is how the tool knows the status of your mods and allows it to update or uninstall them correctly.
 
-The game requires mods to be in a specially named folder (like `mod_0_MyMod`). When you install a mod from a `.zip` file, the tool does two things:
-1.  It unzips your mod, finds the contents, and creates the correctly named `mod_i_...` folder on your device.
-2.  It saves a link in its `mod_mappings.json` file to remember which local `.zip` file corresponds to which folder on the device.
-
-This mapping file is how the tool "manages" your mods, allowing it to know their status and uninstall them correctly. You just need to focus on your source `.zip` files, and the tool handles all the complex parts!
+**Q: What is the "Sync Mappings" button for?**
+**A:** It's a recovery tool. If your `mod_mappings.json` file gets deleted, or if you want the manager to "adopt" mods you copied to the device manually, this button will help. It scans the device and tries to match the installed mod folders with your local `.zip` files based on their names. This will overwrite any existing mappings.
 
 
 ## 🚀 Publishing your Mods
