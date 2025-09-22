@@ -3,6 +3,7 @@ import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import font
+import webbrowser
 
 # --- This is the original ModHelperFrame class, moved here from mod_helper_ui.py ---
 class ModHelperFrame(ttk.Frame):
@@ -50,17 +51,40 @@ class ModHelperFrame(ttk.Frame):
         
         link_frame = ttk.Frame(gs_content)
         link_frame.pack(fill='x', padx=5, pady=5)
-        ttk.Label(link_frame, text="URL:", font=self.bold_font).pack(side='left')
-        link_entry = ttk.Entry(link_frame)
-        link_entry.insert(0, "https://developer.android.com/games/playgames/emulator")
-        link_entry.config(state="readonly")
-        link_entry.pack(side='left', fill='x', expand=True, padx=5)
+        
+        url = "https://developer.android.com/games/playgames/emulator"
+        
+        url_label = ttk.Label(link_frame, text=url, font=("Helvetica", 10, "underline"), cursor="hand2", bootstyle="info")
+        url_label.pack(side='left', padx=(0, 10))
+        
+        open_browser_btn = ttk.Button(link_frame, text="Open in Browser", command=lambda u=url: webbrowser.open_new_tab(u), bootstyle="secondary-outline")
+        open_browser_btn.pack(side='left')
+
+        copied_label = ttk.Label(link_frame, text="Copied!", bootstyle="success")
+
+        def on_url_click(event):
+            self.clipboard_clear()
+            self.clipboard_append(url)
+            self.controller.update() # Process clipboard events
+            copied_label.pack(side='left', padx=5)
+            self.after(2000, copied_label.pack_forget)
+
+        url_label.bind("<Button-1>", on_url_click)
 
         mm_content = self.create_collapsible_pane(self.scrollable_frame, "① The Mod Manager Tab")
-        self.create_section_text(mm_content, "This is the primary screen for managing the collection of mods stored on your computer. To get started, you need to set up your local mod folders correctly.")
+        self.create_section_text(mm_content, "This is your main workspace. It displays all the mod `.zip` files found in the Library folders you've set up on your PC.")
+
+        self.create_section_header(mm_content, "A Tour of the UI")
+        self.create_section_text(mm_content, "The screen is divided into a few key areas:")
         
-        self.create_section_header(mm_content, "Recommended Folder Structure")
-        self.create_section_text(mm_content, "Go to the 'Settings' tab to add your main library folder (e.g., 'My SMX Mods'). Inside that library, you should organize your mods into subfolders. For further organization, you can use category folders with a `c_` prefix. The manager scans for `.zip` files containing your mods.")
+        tour_list_frame = ttk.Frame(mm_content, padding=(10, 5))
+        tour_list_frame.pack(fill='x')
+        self.create_list_item(tour_list_frame, "Library & Category Navigation:", "At the top, you can switch between your main libraries (`[Tracks]`, `[Suits]`, etc.) and then filter by the categories you created in your folders.")
+        self.create_list_item(tour_list_frame, "The Controls Panel:", "The panel on the left contains your main actions: Search, Quick Select buttons, the 'Sync Mappings' recovery tool, and the primary Install/Uninstall buttons.")
+        self.create_list_item(tour_list_frame, "The Mod Card:", "Each mod is displayed on its own card, which validates critical files (like `Track.smxlevel`), shows image previews, and provides quick action buttons.")
+        
+        self.create_section_header(mm_content, "How to Organize Your Files")
+        self.create_section_text(mm_content, "Go to the 'Settings' tab to add your main library folder (e.g., 'My SMX Mods'). Inside that library, you should organize your mods into subfolders. For `Tracks` and `Suits`, you can create category folders with a `c_` prefix. The manager scans for `.zip` files containing your mods.")
         self.create_treeview_example(mm_content)
         
         self.create_section_header(mm_content, "Install, Update & Uninstall")
@@ -130,6 +154,12 @@ class ModHelperFrame(ttk.Frame):
         
     def create_section_text(self, parent, text):
         ttk.Label(parent, text=text, wraplength=750).pack(anchor='w', fill='x', padx=5, pady=(0,5))
+    
+    def create_list_item(self, parent, title, text):
+        item_frame = ttk.Frame(parent)
+        item_frame.pack(fill='x', anchor='w', pady=(2, 5))
+        ttk.Label(item_frame, text=title, font=self.bold_font).pack(anchor='w')
+        ttk.Label(item_frame, text=text, wraplength=730).pack(anchor='w', padx=(10, 0))
 
     def on_canvas_configure(self, event):
         self.canvas.itemconfig(self.frame_id, width=event.width)
