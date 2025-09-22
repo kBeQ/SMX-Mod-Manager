@@ -85,17 +85,14 @@ class ModHelperFrame(ttk.Frame):
         
         self.create_section_header(mm_content, "How to Organize Your Files")
         
-        # --- NEW: Two-column container for Treeview and explanation text ---
         org_container = ttk.Frame(mm_content)
         org_container.pack(fill='x', expand=True, pady=10)
-        org_container.grid_columnconfigure(0, weight=2) # Treeview column (takes more space)
-        org_container.grid_columnconfigure(1, weight=3) # Text column
+        org_container.grid_columnconfigure(0, weight=2)
+        org_container.grid_columnconfigure(1, weight=3)
 
-        # --- MODIFIED: Treeview now goes into the left column ---
         tree_frame = self.create_treeview_example(org_container)
         tree_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 15))
 
-        # --- NEW: Explanatory text goes into the right column ---
         text_frame = ttk.Frame(org_container)
         text_frame.grid(row=0, column=1, sticky="nsew")
         self.create_section_text(text_frame, "The manager scans for `.zip` files inside each Library folder you've added. The way you organize them depends on the mod type.")
@@ -145,11 +142,10 @@ class ModHelperFrame(ttk.Frame):
         header.config(command=toggle)
         return content_frame
 
-    # --- MODIFIED: Treeview is now much more detailed and returns the frame it's in ---
     def create_treeview_example(self, parent):
         tree_frame = ttk.Frame(parent)
         
-        tree = ttk.Treeview(tree_frame, height=14, bootstyle="info")
+        tree = ttk.Treeview(tree_frame, height=26, bootstyle="info")
         tree.pack(fill='both', expand=True)
 
         lib_root = tree.insert("", "end", text=" 📁 My SMX Mods (Library Root)")
@@ -157,25 +153,38 @@ class ModHelperFrame(ttk.Frame):
         # Sounds
         sounds_folder = tree.insert(lib_root, "end", text=" 📁 Sounds")
         sound_cat_1 = tree.insert(sounds_folder, "end", text=" 📁 Spaceship Motor Sound (Category)")
-        tree.insert(sound_cat_1, "end", text="  └─ 📄 GRF250 Spaceship.zip")
-        tree.insert(sounds_folder, "end", text=" 📄 Uncategorized Sound.zip")
+        sound_zip = tree.insert(sound_cat_1, "end", text="  📄 GRF250 Spaceship.zip")
+        sound_middleman = tree.insert(sound_zip, "end", text="   📁 GRF250")
+        tree.insert(sound_middleman, "end", text="    ├─ 🔊 engine.wav")
+        tree.insert(sound_middleman, "end", text="    ├─ 🔊 high.wav")
+        tree.insert(sound_middleman, "end", text="    ├─ 🔊 idle.wav")
+        tree.insert(sound_middleman, "end", text="    ├─ 🔊 low.wav")
+        tree.insert(sound_middleman, "end", text="    └─ 🖼️ preview.png")
+        tree.insert(sounds_folder, "end", text=" 📄 Uncategorized Y250 Sound Mod.zip")
 
         # Suits
         suits_folder = tree.insert(lib_root, "end", text=" 📁 Suits")
         suit_cat_1 = tree.insert(suits_folder, "end", text=" 📁 c_Mx (Category)")
-        tree.insert(suit_cat_1, "end", text="  └─ 📄 My First Mx Suit.zip")
+        suit_zip = tree.insert(suit_cat_1, "end", text="  📄 My First Mx Suit.zip")
+        suit_middleman = tree.insert(suit_zip, "end", text="   📁 My Suit Name")
+        tree.insert(suit_middleman, "end", text="    ├─ 🤵 gear_suit.png")
+        tree.insert(suit_middleman, "end", text="    ├─ 🤵 gear_suit_normal.png")
+        tree.insert(suit_middleman, "end", text="    ├─ 🖼️ icon.png")
+        tree.insert(suit_middleman, "end", text="    └─ 🖼️ preview.png")
         tree.insert(suits_folder, "end", text=" 📄 Uncategorized Suit.zip")
 
         # Tracks
         tracks_folder = tree.insert(lib_root, "end", text=" 📁 Tracks")
         track_cat_1 = tree.insert(tracks_folder, "end", text=" 📁 c_Supermoto (Category)")
-        tree.insert(track_cat_1, "end", text="  └─ 📄 My First Track.zip")
+        track_zip = tree.insert(track_cat_1, "end", text="  📄 My First Track.zip")
+        track_middleman = tree.insert(track_zip, "end", text="   📁 My Track Name")
+        tree.insert(track_middleman, "end", text="    ├─ 🏁 MyTrack.smxlevel")
+        tree.insert(track_middleman, "end", text="    └─ 🖼️ preview.png")
         tree.insert(tracks_folder, "end", text=" 📄 Uncategorized Track.zip")
         
-        tree.item(lib_root, open=True)
-        tree.item(sounds_folder, open=True)
-        tree.item(suits_folder, open=True)
-        tree.item(tracks_folder, open=True)
+        # --- EXPAND ALL NODES BY DEFAULT FOR FULL VISIBILITY ---
+        for item in [lib_root, sounds_folder, suits_folder, tracks_folder, sound_zip, suit_zip, track_zip, sound_middleman, suit_middleman, track_middleman]:
+            tree.item(item, open=True)
 
         tree.bind("<<TreeviewSelect>>", lambda e: "break")
         return tree_frame
