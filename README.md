@@ -205,3 +205,26 @@ If you want to modify the tool or build it yourself:
 
 ## 📄 License
 This project is licensed under the MIT License - see the `LICENSE` file for details.
+
+---
+
+## 🛠️ More SMX Modding Tools
+
+Check out other tools in the SMX Modding suite:
+
+<table width="100%">
+ <tr>
+  <td align="center" width="50%">
+    <h3>SMX Mod Manager</h3>
+    <a href="https://github.com/kBeQ/SMX-Mod-Manager">
+      <img src="https://raw.githubusercontent.com/kBeQ/SMX-Mod-Manager/main/assets/Ico_smx_mod_manager.png" width="250" alt="SMX Mod Manager Banner">
+    </a>
+  </td>
+  <td align="center" width="50%">
+    <h3>SMX Sound Creator</h3>
+    <a href="https://github.com/kBeQ/SMX-Sound-Creator">
+      <img src="https://raw.githubusercontent.com/kBeQ/SMX-Sound-Creator/main/assets/smx_sound_creator.png" width="250" alt="SMX Sound Creator Banner">
+    </a>
+  </td>
+ </tr>
+</table>
