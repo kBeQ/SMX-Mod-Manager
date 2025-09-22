@@ -65,7 +65,7 @@ class ModHelperFrame(ttk.Frame):
         def on_url_click(event):
             self.clipboard_clear()
             self.clipboard_append(url)
-            self.controller.update() # Process clipboard events
+            self.controller.update()
             copied_label.pack(side='left', padx=5)
             self.after(2000, copied_label.pack_forget)
 
@@ -84,8 +84,23 @@ class ModHelperFrame(ttk.Frame):
         self.create_list_item(tour_list_frame, "The Mod Card:", "Each mod is displayed on its own card, which validates critical files (like `Track.smxlevel`), shows image previews, and provides quick action buttons.")
         
         self.create_section_header(mm_content, "How to Organize Your Files")
-        self.create_section_text(mm_content, "Go to the 'Settings' tab to add your main library folder (e.g., 'My SMX Mods'). Inside that library, you should organize your mods into subfolders. For `Tracks` and `Suits`, you can create category folders with a `c_` prefix. The manager scans for `.zip` files containing your mods.")
-        self.create_treeview_example(mm_content)
+        
+        # --- NEW: Two-column container for Treeview and explanation text ---
+        org_container = ttk.Frame(mm_content)
+        org_container.pack(fill='x', expand=True, pady=10)
+        org_container.grid_columnconfigure(0, weight=2) # Treeview column (takes more space)
+        org_container.grid_columnconfigure(1, weight=3) # Text column
+
+        # --- MODIFIED: Treeview now goes into the left column ---
+        tree_frame = self.create_treeview_example(org_container)
+        tree_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 15))
+
+        # --- NEW: Explanatory text goes into the right column ---
+        text_frame = ttk.Frame(org_container)
+        text_frame.grid(row=0, column=1, sticky="nsew")
+        self.create_section_text(text_frame, "The manager scans for `.zip` files inside each Library folder you've added. The way you organize them depends on the mod type.")
+        self.create_list_item(text_frame, "For Tracks and Suits:", "To create categories, make subfolders with a `c_` prefix (e.g., `c_Supermoto`). Mods placed directly in the root of the library folder will appear as 'Uncategorized'.")
+        self.create_list_item(text_frame, "For Sounds (Special Rule):", "Sound libraries are different. **Do not use the `c_` prefix.** Any subfolder is automatically treated as a category (e.g., `Spaceship Motor Sound`).")
         
         self.create_section_header(mm_content, "Install, Update & Uninstall")
         self.create_section_text(mm_content, "Select one or more mods by clicking on them (use Ctrl+Click to select multiple). Then use the buttons in the 'Controls' panel on the left to install or uninstall them. If a mod is already installed, the 'Install' button will update it. The emulator must be connected for these actions to work.")
@@ -130,24 +145,40 @@ class ModHelperFrame(ttk.Frame):
         header.config(command=toggle)
         return content_frame
 
+    # --- MODIFIED: Treeview is now much more detailed and returns the frame it's in ---
     def create_treeview_example(self, parent):
-        tree_frame = ttk.Frame(parent, padding=(0, 10, 0, 10))
-        tree_frame.pack(fill='x', expand=True)
+        tree_frame = ttk.Frame(parent)
+        
+        tree = ttk.Treeview(tree_frame, height=14, bootstyle="info")
+        tree.pack(fill='both', expand=True)
 
-        tree = ttk.Treeview(tree_frame, height=7, bootstyle="info")
-        tree.pack(fill='x', expand=True)
+        lib_root = tree.insert("", "end", text=" 📁 My SMX Mods (Library Root)")
+        
+        # Sounds
+        sounds_folder = tree.insert(lib_root, "end", text=" 📁 Sounds")
+        sound_cat_1 = tree.insert(sounds_folder, "end", text=" 📁 Spaceship Motor Sound (Category)")
+        tree.insert(sound_cat_1, "end", text="  └─ 📄 GRF250 Spaceship.zip")
+        tree.insert(sounds_folder, "end", text=" 📄 Uncategorized Sound.zip")
 
-        lib_root = tree.insert("", "end", text=" 📁 My SMX Mods (Your Library Folder in Settings)")
+        # Suits
+        suits_folder = tree.insert(lib_root, "end", text=" 📁 Suits")
+        suit_cat_1 = tree.insert(suits_folder, "end", text=" 📁 c_Mx (Category)")
+        tree.insert(suit_cat_1, "end", text="  └─ 📄 My First Mx Suit.zip")
+        tree.insert(suits_folder, "end", text=" 📄 Uncategorized Suit.zip")
+
+        # Tracks
         tracks_folder = tree.insert(lib_root, "end", text=" 📁 Tracks")
-        tree.insert(lib_root, "end", text=" 📁 Sounds")
-        tree.insert(lib_root, "end", text=" 📁 Suits")
-        cat_1 = tree.insert(tracks_folder, "end", text=" 📁 c_Supermoto (Category)")
-        cat_2 = tree.insert(tracks_folder, "end", text=" 📁 c_Enduro (Category)")
-        tree.insert(cat_1, "end", text=" └─ 📄 My Awesome Track.zip (Mod File)")
-        tree.insert(tracks_folder, "end", text=" 📄 Uncategorized Track 1.zip (Mod File)")
-        tree.insert(tracks_folder, "end", text=" 📄 Uncategorized Track 2.zip (Mod File)")
+        track_cat_1 = tree.insert(tracks_folder, "end", text=" 📁 c_Supermoto (Category)")
+        tree.insert(track_cat_1, "end", text="  └─ 📄 My First Track.zip")
+        tree.insert(tracks_folder, "end", text=" 📄 Uncategorized Track.zip")
+        
+        tree.item(lib_root, open=True)
+        tree.item(sounds_folder, open=True)
+        tree.item(suits_folder, open=True)
+        tree.item(tracks_folder, open=True)
 
         tree.bind("<<TreeviewSelect>>", lambda e: "break")
+        return tree_frame
 
     def create_section_header(self, parent, text):
         ttk.Label(parent, text=text, font=self.bold_font).pack(anchor='w', pady=(10, 2))
